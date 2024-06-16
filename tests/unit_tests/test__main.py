@@ -43,20 +43,16 @@ def test_upload_file(client: TestClient):
 
 def test_list_files_with_pagination(client: TestClient):
     # Create a directory-like structure in the bucket
-    client.put(
-        f"/files/folder1/file1.txt", files={"file": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)}
-    )
-    client.put(
-        f"/files/folder1/file2.txt", files={"file": ("folder1/file2.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)}
-    )
-    client.put(
-        f"/files/folder2/file3.txt", files={"file": ("folder2/file3.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)}
-    )
-    client.put(
-        f"/files/folder2/subfolder/file4.txt",
-        files={"file": ("folder2/subfolder/file4.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
-    )
-    client.put(f"/files/file5.txt", files={"file": ("file5.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)})
+    file_paths = [
+        "folder1/file1.txt", "folder1/file2.txt",
+        "folder2/file3.txt", "folder2/subfolder/file4.txt", "file5.txt",
+    ]
+    
+    for file_path in file_paths:
+        client.put(
+            f"/files/{file_path}",
+            files={"file": (file_path, TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
+        )
 
     # Query all files
     response = client.get("/files")

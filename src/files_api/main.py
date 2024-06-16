@@ -14,14 +14,13 @@ from fastapi import (
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from botocore.response import StreamingBody
 from files_api.s3.delete_objects import delete_s3_object
 from files_api.s3.read_objects import (
     fetch_s3_object,
     fetch_s3_objects_metadata,
     fetch_s3_objects_using_page_token,
-    object_exists_in_s3,
     get_total_object_count,
+    object_exists_in_s3,
 )
 from files_api.s3.write_objects import upload_s3_object
 
@@ -45,6 +44,7 @@ class FileMetadata(BaseModel):
     size_bytes: int
 
 
+# create/update (Crud)
 class PutFileResponse(BaseModel):
     """Response model for PUT /files/{file_path}."""
 
@@ -52,12 +52,29 @@ class PutFileResponse(BaseModel):
     message: str
 
 
-class GetFileResponse(BaseModel):
+# read (cRud)
+class GetFilesResponse(BaseModel):
     """Response model for GET /files/{file_path}."""
 
     files: List[FileMetadata]
     next_page_token: Optional[str]
     remaining_pages: Optional[int]
+
+
+# read (cRud)
+class GetFilesQueryParams(BaseModel):
+    """Query parameters for GET /files."""
+
+    page_size: int = 10
+    directory: Optional[str] = None
+    page_token: Optional[str] = None
+
+
+# delete (cruD)
+class DeleteFileResponse(BaseModel):
+    """Response model for DELETE /files/{file_path}."""
+
+    message: str
 
 
 ##################
@@ -90,47 +107,34 @@ async def upload_file(file_path: str, file: UploadFile, response: Response) -> P
 @APP.get("/files")
 async def list_files(
     response: Response,
-    directory: Optional[str] = None,
-    page_token: Optional[str] = None,
-    page_size: Optional[int] = 10,
-) -> GetFileResponse:
+    query_params: GetFilesQueryParams = Depends(),
+) -> GetFilesResponse:
     """
     List files with pagination.
     :param directory: The directory to list files from.
     :param page_token: The token to retrieve the next page of results.
     :param page_size: The number of files to return per page.
     """
-    total_objects: int = get_total_object_count(S3_BUCKET_NAME, prefix=directory)
-    total_pages: int = (total_objects + page_size - 1) // page_size
-    
-    if page_token:
+
+    if query_params.page_token:
+        total_objects = get_total_object_count(
+            S3_BUCKET_NAME,
+            prefix=query_params.directory,
+            page_token=query_params.page_token,
+        )
         files, next_page_token = fetch_s3_objects_using_page_token(
             bucket_name=S3_BUCKET_NAME,
-            continuation_token=page_token,
-            max_keys=page_size,
-            # prefix=directory,
+            continuation_token=query_params.page_token,
+            max_keys=query_params.page_size,
         )
-        files_metadata = [
-            FileMetadata(
-                file_path=file["Key"],
-                last_modified=file["LastModified"],
-                size_bytes=file["Size"],
-            )
-            for file in files
-        ]
-        remaining_pages = total_pages - 1 if next_page_token else 0
-        response.status_code = status.HTTP_200_OK
-        return GetFileResponse(
-            files=files_metadata,
-            next_page_token=next_page_token,
-            remaining_pages=remaining_pages,
+    else:
+        total_objects = get_total_object_count(S3_BUCKET_NAME, prefix=query_params.directory)
+        files, next_page_token = fetch_s3_objects_metadata(
+            bucket_name=S3_BUCKET_NAME,
+            prefix=query_params.directory,
+            max_keys=query_params.page_size,
         )
-        
-    files, next_page_token = fetch_s3_objects_metadata(
-        bucket_name=S3_BUCKET_NAME,
-        prefix=directory,
-        max_keys=page_size,
-    )
+
     files_metadata = [
         FileMetadata(
             file_path=file["Key"],
@@ -139,9 +143,10 @@ async def list_files(
         )
         for file in files
     ]
+    total_pages = (total_objects + query_params.page_size - 1) // query_params.page_size
     remaining_pages = total_pages - 1 if next_page_token else 0
     response.status_code = status.HTTP_200_OK
-    return GetFileResponse(
+    return GetFilesResponse(
         files=files_metadata,
         next_page_token=next_page_token,
         remaining_pages=remaining_pages,
@@ -159,15 +164,15 @@ async def get_file_metadata(file_path: str, response: Response) -> Response:
         response.status_code = status.HTTP_200_OK
     else:
         response.status_code = status.HTTP_404_NOT_FOUND
-    
+
     if response.status_code == status.HTTP_200_OK:
-        get_object_response  = fetch_s3_object(bucket_name=S3_BUCKET_NAME, object_key=file_path)
-        response.headers['Content-Type'] = get_object_response ['ContentType']
-        response.headers['Content-Length'] = str(get_object_response ['ContentLength'])
-        response.headers['Last-Modified'] = get_object_response ['LastModified'].strftime("%a, %d %b %Y %H:%M:%S GMT")
-        
+        get_object_response = fetch_s3_object(bucket_name=S3_BUCKET_NAME, object_key=file_path)
+        response.headers["Content-Type"] = get_object_response["ContentType"]
+        response.headers["Content-Length"] = str(get_object_response["ContentLength"])
+        response.headers["Last-Modified"] = get_object_response["LastModified"].strftime("%a, %d %b %Y %H:%M:%S GMT")
+
         return response
-    
+
     return response
 
 
@@ -180,13 +185,13 @@ async def get_file(file_path: str, response: Response) -> StreamingResponse:
     else:
         response.status_code = status.HTTP_404_NOT_FOUND
         return StreamingResponse(content="None", status_code=status.HTTP_404_NOT_FOUND)
-    
+
     get_object_response = fetch_s3_object(bucket_name=S3_BUCKET_NAME, object_key=file_path)
-    response.headers['Content-Type'] = get_object_response ['ContentType']
-    response.headers['Content-Length'] = str(get_object_response ['ContentLength'])
+    response.headers["Content-Type"] = get_object_response["ContentType"]
+    response.headers["Content-Length"] = str(get_object_response["ContentLength"])
     return StreamingResponse(
-        content=get_object_response['Body'],
-        media_type=get_object_response ['ContentType'],
+        content=get_object_response["Body"],
+        media_type=get_object_response["ContentType"],
         headers=response.headers,
     )
 
@@ -201,7 +206,7 @@ async def delete_file(file_path: str, response: Response) -> Response:
     if not object_already_exists:
         response.status_code = status.HTTP_404_NOT_FOUND
         return response
-    
+
     delete_s3_object(bucket_name=S3_BUCKET_NAME, object_key=file_path)
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
