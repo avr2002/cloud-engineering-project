@@ -1,6 +1,7 @@
 """Functions for writing objects from an S3 bucket--the "C" and "U" in CRUD."""
 
 from typing import Optional
+
 import boto3
 
 try:
@@ -9,7 +10,7 @@ except ImportError:
     ...
 
 
-# ContentType/MIME types helps browsers to render the content correctly. 
+# ContentType/MIME types helps browsers to render the content correctly.
 # So when you download a file from S3 with specified ContentType, the browser will know how to render it.
 
 # Common MIME types: https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types
@@ -28,7 +29,7 @@ def upload_s3_object(
 ) -> None:
     """
     Uploads a file to an S3 bucket.
-    
+
     :param bucket_name: The name of the S3 bucket to upload the file to.
     :param object_key: path to the object in the bucket.
     :param file_content: The content of the file to upload.
@@ -44,4 +45,3 @@ def upload_s3_object(
         Body=file_content,
         ContentType=content_type,
     )
-    

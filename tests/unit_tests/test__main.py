@@ -8,6 +8,7 @@ TEST_FILE_PATH = "some/nested/path/file.txt"
 TEST_FILE_CONTENT = b"Hello, world!"
 TEST_FILE_CONTENT_TYPE = "text/plain"
 
+
 # Fixture for FastAPI test client
 @pytest.fixture
 def client(mocked_aws) -> TestClient:  # pylint: disable=unused-argument
@@ -44,10 +45,13 @@ def test_upload_file(client: TestClient):
 def test_list_files_with_pagination(client: TestClient):
     # Create a directory-like structure in the bucket
     file_paths = [
-        "folder1/file1.txt", "folder1/file2.txt",
-        "folder2/file3.txt", "folder2/subfolder/file4.txt", "file5.txt",
+        "folder1/file1.txt",
+        "folder1/file2.txt",
+        "folder2/file3.txt",
+        "folder2/subfolder/file4.txt",
+        "file5.txt",
     ]
-    
+
     for file_path in file_paths:
         client.put(
             f"/files/{file_path}",
@@ -135,14 +139,14 @@ def test_get_file(client: TestClient):
         url=f"/files/{TEST_FILE_PATH}",
         files={"file": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
-    
+
     # Query a existing file
     response = client.get(f"/files/{TEST_FILE_PATH}")
     assert response.status_code == status.HTTP_200_OK
     assert response.headers["Content-Type"] == TEST_FILE_CONTENT_TYPE
     assert response.headers["Content-Length"] == str(len(TEST_FILE_CONTENT))
     assert response.content == TEST_FILE_CONTENT
-    
+
     # Query a non-existing file
     response = client.get("/files/non/existing/file.txt")
     assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -156,11 +160,11 @@ def test_delete_file(client: TestClient):
         url=f"/files/{TEST_FILE_PATH}",
         files={"file": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
-    
+
     # Delete existing file
     response = client.delete(f"/files/{TEST_FILE_PATH}")
     assert response.status_code == status.HTTP_204_NO_CONTENT
-    
+
     # Delete non-existing file
     response = client.delete(f"/files/{TEST_FILE_PATH}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
