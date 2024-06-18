@@ -1,3 +1,5 @@
+"""FastAPI application for managing files in an S3 bucket."""
+
 from datetime import datetime
 from typing import (
     List,
@@ -40,6 +42,7 @@ APP = FastAPI()
 # read (cRud)
 class FileMetadata(BaseModel):
     """Model for file metadata."""
+
     file_path: str
     last_modified: datetime
     size_bytes: int
@@ -86,7 +89,6 @@ class DeleteFileResponse(BaseModel):
 @APP.put("/files/{file_path:path}")
 async def upload_file(file_path: str, file: UploadFile, response: Response) -> PutFileResponse:
     """Upload or update a file to an S3 bucket."""
-
     object_already_exists = object_exists_in_s3(bucket_name=S3_BUCKET_NAME, object_key=file_path)
     if object_already_exists:
         response_message = f"Existing file updated at path: {file_path}"
@@ -112,11 +114,11 @@ async def list_files(
 ) -> GetFilesResponse:
     """
     List files with pagination.
+
     :param directory: The directory to list files from.
     :param page_token: The token to retrieve the next page of results.
     :param page_size: The number of files to return per page.
     """
-
     if query_params.page_token:
         total_objects = get_total_object_count(
             S3_BUCKET_NAME,
@@ -156,7 +158,8 @@ async def list_files(
 
 @APP.head("/files/{file_path:path}")
 async def get_file_metadata(file_path: str, response: Response) -> Response:
-    """Retrieve file metadata.
+    """
+    Retrieve file metadata.
 
     Note: by convention, HEAD requests MUST NOT return a body in the response.
     """
@@ -199,7 +202,8 @@ async def get_file(file_path: str, response: Response) -> StreamingResponse:
 
 @APP.delete("/files/{file_path:path}")
 async def delete_file(file_path: str, response: Response) -> Response:
-    """Delete a file.
+    """
+    Delete a file.
 
     NOTE: DELETE requests MUST NOT return a body in the response.
     """

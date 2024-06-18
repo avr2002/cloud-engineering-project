@@ -11,7 +11,15 @@ requires-python = ">=3.7"
 license = { text = "MIT" }
 dependencies = ['importlib-metadata; python_version<="3.8"', "boto3", "fastapi"]
 classifiers = ["Programming Language :: Python :: 3"]
-keywords = ["python", "fast-api", "aws", "lambda", "s3", "cloud-engineering", "project"]
+keywords = [
+    "python",
+    "fast-api",
+    "aws",
+    "lambda",
+    "s3",
+    "cloud-engineering",
+    "project",
+]
 
 # version will be derived dynamically from version.txt via setuptools
 dynamic = ["version"]
@@ -23,8 +31,8 @@ version = { file = "version.txt" }
 # optional dependencies can be installed with square brackets, e.g. `pip install my-package[test,static-code-qa]`
 [project.optional-dependencies]
 api = ["uvicorn", "moto[server]"]
-stubs=["boto3-stubs[s3]"]
-notebooks=["jupyter", "ipykernel", "rich"]
+stubs = ["boto3-stubs[s3]"]
+notebooks = ["jupyter", "ipykernel", "rich"]
 test = ["pytest", "pytest-cov", "moto[s3]"]
 release = ["build", "twine"]
 static-code-qa = [
@@ -42,7 +50,9 @@ static-code-qa = [
 # - automatically apply formatting
 # - show enhanced autocompletion for stubs libraries
 # See .vscode/settings.json to see how VS Code is configured to use these tools
-dev = ["cloud-engineering-project[test,release,static-code-qa,stubs,notebooks,api]"]
+dev = [
+    "cloud-engineering-project[test,release,static-code-qa,stubs,notebooks,api]",
+]
 
 [build-system]
 # Minimum requirements for the build system to execute.
@@ -73,7 +83,17 @@ exclude = '''
 
 [tool.flake8]
 docstring-convention = "all"
-ignore = ["D107", "D212", "E501", "W503", "W605", "D203", "D100"]
+ignore = [
+    "D107",
+    "D212",
+    "E501",
+    "W503",
+    "W605",
+    "D203",
+    "D100",
+    "R701",
+    "D401",
+]
 exclude = [".venv"]
 max-line-length = 119
 
@@ -95,4 +115,6 @@ disable = [
     "import-error",
     "too-few-public-methods",
     "redefined-outer-name",
+    "unused-argument",
+    "inconsistent-return-statements",
 ]

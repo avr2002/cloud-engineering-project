@@ -22,7 +22,7 @@ except ImportError:
 DEFAULT_MAX_KEYS = 1_000
 
 
-def object_exists_in_s3(
+def object_exists_in_s3(  # type: ignore
     bucket_name: str,
     object_key: str,
     s3_client: Optional["S3Client"] = None,
@@ -134,11 +134,12 @@ def get_total_object_count(
     page_token: Optional[str] = None,
     s3_client: Optional["S3Client"] = None,
 ) -> int:
+    """Get the total number of objects in an S3 bucket."""
     s3_client = s3_client or boto3.client("s3")
     paginator = s3_client.get_paginator("list_objects_v2")
     operation_parameters = {"Bucket": bucke_name, "Prefix": prefix or ""}
     if page_token:
-        operation_parameters["PaginationConfig"] = {"StartingToken": page_token}
+        operation_parameters["PaginationConfig"] = {"StartingToken": page_token}  # type: ignore
 
     page_iterator = paginator.paginate(**operation_parameters)
     total_objects = 0

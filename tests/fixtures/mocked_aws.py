@@ -27,9 +27,7 @@ def point_away_from_aws() -> None:
 
 @pytest.fixture(scope="function")
 def mocked_aws() -> Generator[None, None, None]:
-    """
-    Set up a mocked AWS environment for testing and clean up after the test.
-    """
+    """Set up a mocked AWS environment for testing and clean up after the test."""
     with mock_aws():
         # Set the environment variables to point away from AWS
         point_away_from_aws()

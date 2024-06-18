@@ -23,5 +23,3 @@ def delete_s3_object(bucket_name: str, object_key: str, s3_client: Optional["S3C
     s3_client = s3_client or boto3.client("s3")
     if object_exists_in_s3(bucket_name=bucket_name, object_key=object_key, s3_client=s3_client):
         s3_client.delete_object(Bucket=bucket_name, Key=object_key)
-
-    return

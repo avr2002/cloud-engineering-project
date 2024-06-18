@@ -1,3 +1,5 @@
+"""Unit tests for the main FastAPI application."""
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -11,12 +13,14 @@ TEST_FILE_CONTENT_TYPE = "text/plain"
 
 # Fixture for FastAPI test client
 @pytest.fixture
-def client(mocked_aws) -> TestClient:  # pylint: disable=unused-argument
+def client(mocked_aws) -> TestClient:
+    """Pytest fixture to provide a FastAPI test client."""
     with TestClient(APP) as client:
         yield client
 
 
 def test_upload_file(client: TestClient):
+    """Test uploading/updating a file to the bucket using PUT method."""
     response = client.put(
         f"/files/{TEST_FILE_PATH}",
         files={"file": (TEST_FILE_PATH, TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
@@ -43,6 +47,7 @@ def test_upload_file(client: TestClient):
 
 
 def test_list_files_with_pagination(client: TestClient):
+    """Test listing files with pagination using GET method."""
     # Create a directory-like structure in the bucket
     file_paths = [
         "folder1/file1.txt",
@@ -103,7 +108,7 @@ def test_list_files_with_pagination(client: TestClient):
 
     # Query with file prefix
     next_page_token = response.json().get("next_page_token")
-    response = client.get(f"/files?directory=file")
+    response = client.get("/files?directory=file")
     assert response.status_code == status.HTTP_200_OK
     assert len(response.json().get("files", [])) == 1
     assert response.json().get("files")[0].get("file_path") == "file5.txt"
@@ -114,6 +119,7 @@ def test_list_files_with_pagination(client: TestClient):
 
 
 def test_get_file_metadata(client: TestClient):
+    """Test getting metadata for a file using HEAD method."""
     # Create sample file
     client.put(
         url=f"/files/{TEST_FILE_PATH}",
@@ -134,6 +140,7 @@ def test_get_file_metadata(client: TestClient):
 
 
 def test_get_file(client: TestClient):
+    """Test getting a file using GET method."""
     # Create sample file
     client.put(
         url=f"/files/{TEST_FILE_PATH}",
@@ -155,6 +162,7 @@ def test_get_file(client: TestClient):
 
 
 def test_delete_file(client: TestClient):
+    """Test deleting a file using DELETE method."""
     # Create sample file
     client.put(
         url=f"/files/{TEST_FILE_PATH}",
