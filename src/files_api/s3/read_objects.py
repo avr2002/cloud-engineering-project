@@ -10,7 +10,6 @@ from botocore.exceptions import ClientError
 
 try:
     from mypy_boto3_s3 import S3Client
-    from mypy_boto3_s3.paginator import ListObjectsV2Paginator
     from mypy_boto3_s3.type_defs import (
         GetObjectOutputTypeDef,
         HeadObjectOutputTypeDef,
@@ -140,11 +139,10 @@ def get_total_object_count(
     operation_parameters = {"Bucket": bucke_name, "Prefix": prefix or ""}
     if page_token:
         operation_parameters["PaginationConfig"] = {"StartingToken": page_token}
-    
+
     page_iterator = paginator.paginate(**operation_parameters)
     total_objects = 0
     for page in page_iterator:
         total_objects += len(page.get("Contents", []))
-        
+
     return total_objects
-    

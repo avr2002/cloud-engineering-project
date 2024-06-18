@@ -1,14 +1,14 @@
 """Test cases for `s3.write_objects`."""
 
 import boto3
-from moto import mock_aws
 
 from files_api.s3.write_objects import upload_s3_object
-from tests.consts import TEST_BUCKET_NAME
+# from tests.consts import TEST_BUCKET_NAME
+from files_api.main import S3_BUCKET_NAME as TEST_BUCKET_NAME
 
 
-@mock_aws
 def test__upload_s3_object(mocked_aws: None):
+    """Test uploading a file to an S3 bucket."""
     # 2. Upload a file to the bucket, with a particular content type
     object_key = "test.txt"
     file_content = b"Hello, world!"

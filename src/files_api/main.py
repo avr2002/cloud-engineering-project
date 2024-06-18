@@ -39,6 +39,7 @@ APP = FastAPI()
 
 # read (cRud)
 class FileMetadata(BaseModel):
+    """Model for file metadata."""
     file_path: str
     last_modified: datetime
     size_bytes: int

@@ -13,6 +13,7 @@ from files_api.main import S3_BUCKET_NAME as TEST_BUCKET_NAME
 
 # Set the environment variables to point away from AWS
 def point_away_from_aws() -> None:
+    """Set the environment variables to point away from AWS for testing using Moto."""
     os.environ["AWS_ACCESS_KEY_ID"] = "testing"
     os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
     os.environ["AWS_SECURITY_TOKEN"] = "testing"

@@ -7,15 +7,12 @@ from files_api.s3.read_objects import (
     fetch_s3_objects_using_page_token,
     object_exists_in_s3,
 )
-from tests.consts import TEST_BUCKET_NAME
-
-try:
-    from mypy_boto3_s3 import S3Client
-except ImportError:
-    ...
+# from tests.consts import TEST_BUCKET_NAME
+from files_api.main import S3_BUCKET_NAME as TEST_BUCKET_NAME
 
 
 def test_object_exists_in_s3(mocked_aws: None):
+    """Test checking if an object exists in an S3 bucket."""
     s3_client = boto3.client("s3")
     s3_client.put_object(Bucket=TEST_BUCKET_NAME, Key="testfile.txt", Body=b"test content")
     assert object_exists_in_s3(TEST_BUCKET_NAME, "testfile.txt")
@@ -23,6 +20,7 @@ def test_object_exists_in_s3(mocked_aws: None):
 
 
 def test_pagination(mocked_aws: None):
+    """Test paginating through objects in an S3 bucket."""
     s3_client = boto3.client("s3")
 
     # Create 5 objects in the bucket
@@ -54,6 +52,7 @@ def test_pagination(mocked_aws: None):
 
 
 def test_mixed_page_sizes(mocked_aws: None):
+    """Test paginating through objects in an S3 bucket with mixed page sizes."""
     s3_client = boto3.client("s3")
 
     # Create 5 objects in the bucket
@@ -85,6 +84,7 @@ def test_mixed_page_sizes(mocked_aws: None):
 
 
 def test_directory_queries(mocked_aws: None):
+    """Test querying objects in an S3 bucket with directory-like structure."""
     s3_client = boto3.client("s3")
 
     # Create a directory-like structure in the bucket
