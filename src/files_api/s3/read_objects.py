@@ -1,7 +1,9 @@
 """Functions for reading objects from an S3 bucket--the "R" in CRUD."""
 
 from typing import (
+    List,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -72,7 +74,7 @@ def fetch_s3_objects_using_page_token(
     continuation_token: str,
     max_keys: int | None = None,
     s3_client: Optional["S3Client"] = None,
-) -> tuple[list["ObjectTypeDef"], Union[str, None]]:
+) -> Tuple[list["ObjectTypeDef"], Union[str, None]]:
     """
     Fetch list of object keys and their metadata using a continuation token.
 
@@ -103,7 +105,7 @@ def fetch_s3_objects_metadata(
     prefix: Optional[str] = None,
     max_keys: Optional[int] = DEFAULT_MAX_KEYS,
     s3_client: Optional["S3Client"] = None,
-) -> tuple[list["ObjectTypeDef"], Union[str, None]]:
+) -> Tuple[list["ObjectTypeDef"], Union[str, None]]:
     """
     Fetch list of object keys and their metadata.
 
@@ -122,7 +124,7 @@ def fetch_s3_objects_metadata(
         Prefix=prefix or "",
         MaxKeys=max_keys or DEFAULT_MAX_KEYS,
     )
-    files: list["ObjectTypeDef"] = response.get("Contents", [])
+    files: List["ObjectTypeDef"] = response.get("Contents", [])
     next_continuation_token: str | None = response.get("NextContinuationToken", None)
 
     return files, next_continuation_token

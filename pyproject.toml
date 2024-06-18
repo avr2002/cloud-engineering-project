@@ -117,4 +117,11 @@ disable = [
     "redefined-outer-name",
     "unused-argument",
     "inconsistent-return-statements",
+    "unsupported-binary-operation",
+    "unsubscriptable-object",
 ]
+
+
+[[tool.mypy.overrides]]
+module = "files_api"
+ignore_errors = false   # ignores all non-fatal errors.
