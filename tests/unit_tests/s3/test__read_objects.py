@@ -2,13 +2,12 @@
 
 import boto3
 
-# from tests.consts import TEST_BUCKET_NAME
-from files_api.main import S3_BUCKET_NAME as TEST_BUCKET_NAME
 from files_api.s3.read_objects import (
     fetch_s3_objects_metadata,
     fetch_s3_objects_using_page_token,
     object_exists_in_s3,
 )
+from tests.consts import TEST_BUCKET_NAME
 
 
 def test_object_exists_in_s3(mocked_aws: None):

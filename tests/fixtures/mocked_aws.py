@@ -7,8 +7,9 @@ import boto3
 import pytest
 from moto import mock_aws
 
-# from tests.consts import TEST_BUCKET_NAME
-from files_api.main import S3_BUCKET_NAME as TEST_BUCKET_NAME
+from tests.consts import TEST_BUCKET_NAME
+
+# from files_api.main import S3_BUCKET_NAME as TEST_BUCKET_NAME
 
 
 # Set the environment variables to point away from AWS
@@ -25,7 +26,7 @@ def point_away_from_aws() -> None:
 # of verb, because it is a resource that is being provided to the test.
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def mocked_aws() -> Generator[None, None, None]:
     """Set up a mocked AWS environment for testing and clean up after the test."""
     with mock_aws():

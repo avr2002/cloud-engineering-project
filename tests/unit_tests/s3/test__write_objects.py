@@ -2,9 +2,8 @@
 
 import boto3
 
-# from tests.consts import TEST_BUCKET_NAME
-from files_api.main import S3_BUCKET_NAME as TEST_BUCKET_NAME
 from files_api.s3.write_objects import upload_s3_object
+from tests.consts import TEST_BUCKET_NAME
 
 
 def test__upload_s3_object(mocked_aws: None):
