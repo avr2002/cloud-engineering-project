@@ -95,7 +95,7 @@ def fetch_s3_objects_using_page_token(
         MaxKeys=max_keys or DEFAULT_MAX_KEYS,
     )
     files: List["ObjectTypeDef"] = response.get("Contents", [])
-    next_continuation_token: str | None = response.get("NextContinuationToken", None)
+    next_continuation_token: Union[str, None] = response.get("NextContinuationToken", None)
 
     return files, next_continuation_token
 
