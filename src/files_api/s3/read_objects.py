@@ -72,9 +72,9 @@ def fetch_s3_object(
 def fetch_s3_objects_using_page_token(
     bucket_name: str,
     continuation_token: str,
-    max_keys: int | None = None,
+    max_keys: Union[int, None] = None,
     s3_client: Optional["S3Client"] = None,
-) -> Tuple[list["ObjectTypeDef"], Union[str, None]]:
+) -> Tuple[List["ObjectTypeDef"], Union[str, None]]:
     """
     Fetch list of object keys and their metadata using a continuation token.
 
@@ -94,7 +94,7 @@ def fetch_s3_objects_using_page_token(
         ContinuationToken=continuation_token,
         MaxKeys=max_keys or DEFAULT_MAX_KEYS,
     )
-    files: list["ObjectTypeDef"] = response.get("Contents", [])
+    files: List["ObjectTypeDef"] = response.get("Contents", [])
     next_continuation_token: str | None = response.get("NextContinuationToken", None)
 
     return files, next_continuation_token
@@ -105,7 +105,7 @@ def fetch_s3_objects_metadata(
     prefix: Optional[str] = None,
     max_keys: Optional[int] = DEFAULT_MAX_KEYS,
     s3_client: Optional["S3Client"] = None,
-) -> Tuple[list["ObjectTypeDef"], Union[str, None]]:
+) -> Tuple[List["ObjectTypeDef"], Union[str, None]]:
     """
     Fetch list of object keys and their metadata.
 
@@ -125,7 +125,7 @@ def fetch_s3_objects_metadata(
         MaxKeys=max_keys or DEFAULT_MAX_KEYS,
     )
     files: List["ObjectTypeDef"] = response.get("Contents", [])
-    next_continuation_token: str | None = response.get("NextContinuationToken", None)
+    next_continuation_token: Union[str, None] = response.get("NextContinuationToken", None)
 
     return files, next_continuation_token
 
