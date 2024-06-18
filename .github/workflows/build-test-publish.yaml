@@ -81,8 +81,8 @@ jobs:
           path: ./dist/
       - name: Install test dependencies
         run: |
-          pip install pytest pytest-cov ./dist/*.whl
-      - name: Lint, Format, and other static code quality checks
+          pip install moto[s3] pytest pytest-cov ./dist/*.whl
+      - name: Run tests
         run: |
           /bin/bash -x run.sh test:ci
 
