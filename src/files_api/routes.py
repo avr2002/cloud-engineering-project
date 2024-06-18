@@ -25,6 +25,7 @@ from files_api.schemas import (
     GetFilesResponse,
     PutFileResponse,
 )
+from files_api.settings import Settings
 
 ROUTER = APIRouter()
 
@@ -37,7 +38,8 @@ async def upload_file(
     response: Response,
 ) -> PutFileResponse:
     """Upload or update a file to an S3 bucket."""
-    s3_bucket_name = request.app.state.s3_bucket_name
+    settings: Settings = request.app.state.settings
+    s3_bucket_name = settings.s3_bucket_name
     object_already_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=file_path)
     if object_already_exists:
         response_message = f"Existing file updated at path: {file_path}"
@@ -69,7 +71,8 @@ async def list_files(
     :param page_token: The token to retrieve the next page of results.
     :param page_size: The number of files to return per page.
     """
-    s3_bucket_name = request.app.state.s3_bucket_name
+    settings: Settings = request.app.state.settings
+    s3_bucket_name = settings.s3_bucket_name
     if query_params.page_token:
         total_objects = get_total_object_count(
             s3_bucket_name,
@@ -118,7 +121,8 @@ async def get_file_metadata(
 
     Note: by convention, HEAD requests MUST NOT return a body in the response.
     """
-    s3_bucket_name = request.app.state.s3_bucket_name
+    settings: Settings = request.app.state.settings
+    s3_bucket_name = settings.s3_bucket_name
     object_already_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=file_path)
     if object_already_exists:
         response.status_code = status.HTTP_200_OK
@@ -143,7 +147,8 @@ async def get_file(
     response: Response,
 ) -> StreamingResponse:
     """Retrieve a file."""
-    s3_bucket_name = request.app.state.s3_bucket_name
+    settings: Settings = request.app.state.settings
+    s3_bucket_name = settings.s3_bucket_name
     object_already_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=file_path)
     if object_already_exists:
         response.status_code = status.HTTP_200_OK
@@ -172,7 +177,8 @@ async def delete_file(
 
     NOTE: DELETE requests MUST NOT return a body in the response.
     """
-    s3_bucket_name = request.app.state.s3_bucket_name
+    settings: Settings = request.app.state.settings
+    s3_bucket_name = settings.s3_bucket_name
     object_already_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=file_path)
     if not object_already_exists:
         response.status_code = status.HTTP_404_NOT_FOUND
