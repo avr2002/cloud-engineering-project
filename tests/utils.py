@@ -1,3 +1,5 @@
+"""Utility functions for testing purposes."""
+
 import boto3
 import botocore
 

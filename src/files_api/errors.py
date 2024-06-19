@@ -1,3 +1,5 @@
+"""Custom error handlers for the Fast API application."""
+
 import pydantic
 from fastapi import (
     Request,
