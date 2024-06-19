@@ -1,26 +1,11 @@
 """Unit tests for the main FastAPI application."""
 
-import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
-
-from files_api.main import create_app
-from files_api.settings import Settings
-from tests.consts import TEST_BUCKET_NAME
 
 TEST_FILE_PATH = "some/nested/path/file.txt"
 TEST_FILE_CONTENT = b"Hello, world!"
 TEST_FILE_CONTENT_TYPE = "text/plain"
-
-
-# Fixture for FastAPI test client
-@pytest.fixture
-def client(mocked_aws) -> TestClient:
-    """Pytest fixture to provide a FastAPI test client."""
-    settings: Settings = Settings(s3_bucket_name=TEST_BUCKET_NAME)
-    app = create_app(settings=settings)
-    with TestClient(app) as client:
-        yield client
 
 
 def test_upload_file(client: TestClient):
@@ -136,12 +121,6 @@ def test_get_file_metadata(client: TestClient):
     assert response.headers["Content-Type"] == TEST_FILE_CONTENT_TYPE
     assert response.headers["Content-Length"] == str(len(TEST_FILE_CONTENT))
 
-    # Query metadata for non-existing file
-    response = client.head("/files/non/existing/file.txt")
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert "Content-Type" not in response.headers
-    assert "Content-Length" not in response.headers
-
 
 def test_get_file(client: TestClient):
     """Test getting a file using GET method."""
@@ -158,12 +137,6 @@ def test_get_file(client: TestClient):
     assert response.headers["Content-Length"] == str(len(TEST_FILE_CONTENT))
     assert response.content == TEST_FILE_CONTENT
 
-    # Query a non-existing file
-    response = client.get("/files/non/existing/file.txt")
-    assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert "Content-Type" not in response.headers
-    assert "Content-Length" not in response.headers
-
 
 def test_delete_file(client: TestClient):
     """Test deleting a file using DELETE method."""
@@ -176,7 +149,3 @@ def test_delete_file(client: TestClient):
     # Delete existing file
     response = client.delete(f"/files/{TEST_FILE_PATH}")
     assert response.status_code == status.HTTP_204_NO_CONTENT
-
-    # Delete non-existing file
-    response = client.delete(f"/files/{TEST_FILE_PATH}")
-    assert response.status_code == status.HTTP_404_NOT_FOUND
