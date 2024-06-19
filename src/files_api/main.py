@@ -5,7 +5,10 @@ from typing import Union
 import pydantic
 from fastapi import FastAPI
 
-from files_api.errors import handle_pydantic_validation_error
+from files_api.errors import (
+    handle_broad_exceptions,
+    handle_pydantic_validation_error,
+)
 from files_api.routes import ROUTER
 from files_api.settings import Settings
 
@@ -23,6 +26,7 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
         exc_class_or_status_code=pydantic.ValidationError,
         handler=handle_pydantic_validation_error,
     )
+    app.middleware("http")(handle_broad_exceptions)
     return app
 
 

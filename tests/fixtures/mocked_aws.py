@@ -6,7 +6,7 @@ from typing import Generator
 import boto3
 import pytest
 from moto import mock_aws
-
+from tests.utils import delete_s3_bucket
 from tests.consts import TEST_BUCKET_NAME
 
 # from files_api.main import S3_BUCKET_NAME as TEST_BUCKET_NAME
@@ -40,8 +40,4 @@ def mocked_aws() -> Generator[None, None, None]:
         yield
 
         # 4. Clean up/Teardown by deleting the bucket
-        response = s3_client.list_objects_v2(Bucket=TEST_BUCKET_NAME)
-        for obj in response.get("Contents", []):
-            s3_client.delete_object(Bucket=TEST_BUCKET_NAME, Key=obj["Key"])
-
-        s3_client.delete_bucket(Bucket=TEST_BUCKET_NAME)
+        delete_s3_bucket(TEST_BUCKET_NAME)

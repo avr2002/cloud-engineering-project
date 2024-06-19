@@ -65,7 +65,6 @@ class GetFilesResponse(BaseModel):
 
     files: List[FileMetadata]
     next_page_token: Optional[str]
-    # remaining_pages: Optional[int]
 
 
 # delete (cruD)

@@ -1,7 +1,10 @@
 from fastapi import status
 from fastapi.testclient import TestClient
 
+
 from files_api.schemas import DEFAULT_GET_FILES_MAX_PAGE_SIZE
+from tests.consts import TEST_BUCKET_NAME
+from tests.utils import delete_s3_bucket
 
 NON_EXISTENT_FILE_PATH = "nonexistent_file.txt"
 
@@ -46,3 +49,12 @@ def test_get_files_page_token_is_mutually_exclusive_with_page_size_and_directory
     response = client.get("/files?page_token=token&page_size=10")
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert "mutually exclusive" in str(response.json())
+
+
+def test_unforeseen_500_error(client: TestClient):
+    # Delete the S3 bucket and all objects inside name from the app state to force an unforeseen error
+    delete_s3_bucket(TEST_BUCKET_NAME)
+
+    # make a request to the API to a route that interacts with the S3 bucket
+    response = client.get("/files")
+    assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR

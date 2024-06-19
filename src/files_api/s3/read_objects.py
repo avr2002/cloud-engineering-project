@@ -128,24 +128,3 @@ def fetch_s3_objects_metadata(
     next_continuation_token: Union[str, None] = response.get("NextContinuationToken", None)
 
     return files, next_continuation_token
-
-
-# def get_total_object_count(
-#     bucke_name: str,
-#     prefix: Optional[str] = None,
-#     page_token: Optional[str] = None,
-#     s3_client: Optional["S3Client"] = None,
-# ) -> int:
-#     """Get the total number of objects in an S3 bucket."""
-#     s3_client = s3_client or boto3.client("s3")
-#     paginator = s3_client.get_paginator("list_objects_v2")
-#     operation_parameters = {"Bucket": bucke_name, "Prefix": prefix or ""}
-#     if page_token:
-#         operation_parameters["PaginationConfig"] = {"StartingToken": page_token}  # type: ignore
-
-#     page_iterator = paginator.paginate(**operation_parameters)
-#     total_objects = 0
-#     for page in page_iterator:
-#         total_objects += len(page.get("Contents", []))
-
-#     return total_objects
