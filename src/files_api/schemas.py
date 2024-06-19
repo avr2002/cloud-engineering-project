@@ -4,11 +4,13 @@ from datetime import datetime
 from typing import (
     List,
     Optional,
+    Self,
 )
 
 from pydantic import (
     BaseModel,
     Field,
+    model_validator,
 )
 
 DEFAULT_GET_FILES_PAGE_SIZE = 10
@@ -45,6 +47,16 @@ class GetFilesQueryParams(BaseModel):
     )
     directory: Optional[str] = DEFAULT_GET_FILES_DIRECTORY
     page_token: Optional[str] = None
+    
+    @model_validator(mode="after")
+    def check_page_token(self) -> Self:
+        if self.page_token:
+            get_files_query_params: dict = self.model_dump(exclude_unset=True)
+            page_size_set: bool = "page_size" in get_files_query_params.keys()
+            directory_set: bool = "directory" in get_files_query_params.keys()
+            if page_size_set or directory_set:
+                raise ValueError("page_token is mutually exclusive with page_size and directory")
+        return self
 
 
 # read (cRud)
@@ -53,7 +65,7 @@ class GetFilesResponse(BaseModel):
 
     files: List[FileMetadata]
     next_page_token: Optional[str]
-    remaining_pages: Optional[int]
+    # remaining_pages: Optional[int]
 
 
 # delete (cruD)

@@ -2,8 +2,10 @@
 
 from typing import Union
 
+import pydantic
 from fastapi import FastAPI
 
+from files_api.errors import handle_pydantic_validation_error
 from files_api.routes import ROUTER
 from files_api.settings import Settings
 
@@ -17,6 +19,10 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
     # app.state.s3_bucket_name = s3_bucket_name
     app.state.settings = settings
     app.include_router(ROUTER)
+    app.add_exception_handler(
+        exc_class_or_status_code=pydantic.ValidationError,
+        handler=handle_pydantic_validation_error,
+    )
     return app
 
 

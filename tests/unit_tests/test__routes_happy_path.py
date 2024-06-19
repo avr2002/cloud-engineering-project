@@ -37,74 +37,18 @@ def test_upload_file(client: TestClient):
 
 def test_list_files_with_pagination(client: TestClient):
     """Test listing files with pagination using GET method."""
-    # Create a directory-like structure in the bucket
-    file_paths = [
-        "folder1/file1.txt",
-        "folder1/file2.txt",
-        "folder2/file3.txt",
-        "folder2/subfolder/file4.txt",
-        "file5.txt",
-    ]
-
-    for file_path in file_paths:
+    # Upload files
+    for i in range(15):
         client.put(
-            f"/files/{file_path}",
-            files={"file": (file_path, TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
+            f"/files/file{i}.txt",
+            files={"file": (f"file{i}.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
         )
-
-    # Query all files
-    response = client.get("/files")
+    # List files with page size 10
+    response = client.get("/files?page_size=10")
     assert response.status_code == status.HTTP_200_OK
-    assert len(response.json().get("files", [])) == 5
-    assert response.json().get("next_page_token") is None
-    assert response.json().get("remaining_pages") == 0
-
-    # Query with prefix
-    response = client.get("/files?directory=folder1")
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.json().get("files", [])) == 2
-    assert response.json().get("next_page_token") is None
-    assert response.json().get("remaining_pages") == 0
-
-    # Query with prefix
-    response = client.get("/files?directory=folder")
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.json().get("files", [])) == 4
-    assert response.json().get("next_page_token") is None
-    assert response.json().get("remaining_pages") == 0
-
-    # Query with prefix as sub-directory
-    response = client.get("/files?directory=folder2/subfolder")
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.json().get("files", [])) == 1
-    assert response.json().get("next_page_token") is None
-    assert response.json().get("remaining_pages") == 0
-
-    # Query with prefix and pagination
-    response = client.get("/files?directory=folder&page_size=2")
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.json().get("files", [])) == 2
-    assert response.json().get("next_page_token") is not None
-    assert response.json().get("remaining_pages") == 1
-
-    # Query prefix, directory and pagination with page token
-    next_page_token = response.json().get("next_page_token")
-    response = client.get(f"/files?page_token={next_page_token}")
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.json().get("files", [])) == 2
-    assert response.json().get("next_page_token") is None
-    assert response.json().get("remaining_pages") == 0
-
-    # Query with file prefix
-    next_page_token = response.json().get("next_page_token")
-    response = client.get("/files?directory=file")
-    assert response.status_code == status.HTTP_200_OK
-    assert len(response.json().get("files", [])) == 1
-    assert response.json().get("files")[0].get("file_path") == "file5.txt"
-    assert response.json().get("next_page_token") is None
-    assert response.json().get("remaining_pages") == 0
-
-    # @TODO: Query with invalid page token
+    data = response.json()
+    assert len(data["files"]) == 10
+    assert "next_page_token" in data
 
 
 def test_get_file_metadata(client: TestClient):

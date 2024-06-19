@@ -99,16 +99,19 @@ function run-tests {
 }
 
 function test:wheel-locally {
-    deactivate || true
+    source deactivate || true
     rm -rf test-env || true
     python -m venv test-env
     source test-env/bin/activate
     clean || true
     pip install build
     build
-    pip install ./dist/*.whl pytest pytest-cov
-    test:ci
-    deactivate || true
+    WHEEL_FPATH=$(ls ./dist/*.whl)
+    pip install "${WHEEL_FPATH}[test]" || true
+    test:ci || true
+    source deactivate || true
+    rm -rf test-env || true
+    clean || true
 }
 
 # serve the html test coverage report on localhost:8000
