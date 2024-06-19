@@ -6,7 +6,15 @@ from typing import (
     Optional,
 )
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
+
+DEFAULT_GET_FILES_PAGE_SIZE = 10
+DEFAULT_GET_FILES_MIN_PAGE_SIZE = 1
+DEFAULT_GET_FILES_MAX_PAGE_SIZE = 100
+DEFAULT_GET_FILES_DIRECTORY = ""
 
 
 # read (cRud)
@@ -27,21 +35,25 @@ class PutFileResponse(BaseModel):
 
 
 # read (cRud)
+class GetFilesQueryParams(BaseModel):
+    """Query parameters for GET /files."""
+
+    page_size: int = Field(
+        default=DEFAULT_GET_FILES_PAGE_SIZE,
+        ge=DEFAULT_GET_FILES_MIN_PAGE_SIZE,
+        le=DEFAULT_GET_FILES_MAX_PAGE_SIZE,
+    )
+    directory: Optional[str] = DEFAULT_GET_FILES_DIRECTORY
+    page_token: Optional[str] = None
+
+
+# read (cRud)
 class GetFilesResponse(BaseModel):
     """Response model for GET /files/{file_path}."""
 
     files: List[FileMetadata]
     next_page_token: Optional[str]
     remaining_pages: Optional[int]
-
-
-# read (cRud)
-class GetFilesQueryParams(BaseModel):
-    """Query parameters for GET /files."""
-
-    page_size: int = 10
-    directory: Optional[str] = None
-    page_token: Optional[str] = None
 
 
 # delete (cruD)

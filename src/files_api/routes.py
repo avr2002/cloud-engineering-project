@@ -65,13 +65,7 @@ async def list_files(
     response: Response,
     query_params: GetFilesQueryParams = Depends(),
 ) -> GetFilesResponse:
-    """
-    List files with pagination.
-
-    :param directory: The directory to list files from.
-    :param page_token: The token to retrieve the next page of results.
-    :param page_size: The number of files to return per page.
-    """
+    """List files with pagination."""
     settings: Settings = request.app.state.settings
     s3_bucket_name = settings.s3_bucket_name
     if query_params.page_token:
@@ -144,8 +138,8 @@ async def get_file_metadata(
 @ROUTER.get("/files/{file_path:path}")
 async def get_file(
     request: Request,
-    file_path: str,
     response: Response,
+    file_path: str,
 ) -> StreamingResponse:
     """Retrieve a file."""
     # 1. Business Logic: Erros that user can fix.
