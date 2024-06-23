@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import (
     List,
     Optional,
-    Self,
 )
 
 from pydantic import (
@@ -12,6 +11,7 @@ from pydantic import (
     Field,
     model_validator,
 )
+from typing_extensions import Self
 
 DEFAULT_GET_FILES_PAGE_SIZE = 10
 DEFAULT_GET_FILES_MIN_PAGE_SIZE = 1
