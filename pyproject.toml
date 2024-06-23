@@ -95,6 +95,12 @@ ignore = [
     "D401",
     # D103: Missing docstring in public function
     "D103",
+    # D101: Missing docstring in public class
+    "D101",
+    # D102: Missing docstring in public method
+    "D102",
+    # D104: Missing docstring in public package
+    "D104",
     # D105: Missing docstring in magic method
     "D105",
 ]
