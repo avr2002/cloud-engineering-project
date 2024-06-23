@@ -52,7 +52,7 @@ class GetFilesQueryParams(BaseModel):
     def check_page_token(self) -> Self:
         """Ensure that page_token is mutually exclusive with page_size and directory."""
         if self.page_token:
-            get_files_query_params: dict = self.model_dump(exclude_unset=True)
+            get_files_query_params: dict = self.model_dump(exclude_defaults=True)
             page_size_set: bool = "page_size" in get_files_query_params.keys()
             directory_set: bool = "directory" in get_files_query_params.keys()
             if page_size_set or directory_set:
