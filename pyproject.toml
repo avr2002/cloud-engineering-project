@@ -93,6 +93,10 @@ ignore = [
     "D100",
     "R701",
     "D401",
+    # D103: Missing docstring in public function
+    "D103",
+    # D105: Missing docstring in magic method
+    "D105",
 ]
 exclude = [".venv"]
 max-line-length = 119
@@ -119,4 +123,5 @@ disable = [
     "inconsistent-return-statements",
     "unsupported-binary-operation",
     "unsubscriptable-object",
+    "missing-module-docstring",
 ]
