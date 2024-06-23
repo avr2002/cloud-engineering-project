@@ -2,8 +2,8 @@
 
 from fastapi import status
 from fastapi.testclient import TestClient
-
 from files_api.schemas import DEFAULT_GET_FILES_MAX_PAGE_SIZE
+
 from tests.consts import TEST_BUCKET_NAME
 from tests.utils import delete_s3_bucket
 
@@ -12,21 +12,21 @@ NON_EXISTENT_FILE_PATH = "nonexistent_file.txt"
 
 def test_get_nonexistent_file(client: TestClient):
     """Test that a 404 error is returned when trying to get a nonexistent file."""
-    response = client.get(f"/files/{NON_EXISTENT_FILE_PATH}")
+    response = client.get(f"/v1/files/{NON_EXISTENT_FILE_PATH}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": f"File not found: {NON_EXISTENT_FILE_PATH}"}
 
 
 def test_get_nonexistent_file_metadata(client: TestClient):
     """Test that a 404 error is returned when trying to get metadata for a nonexistent file."""
-    response = client.head(f"/files/{NON_EXISTENT_FILE_PATH}")
+    response = client.head(f"/v1/files/{NON_EXISTENT_FILE_PATH}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.headers["Error"] == f"File not found: {NON_EXISTENT_FILE_PATH}"
 
 
 def test_delete_nonexistent_file(client: TestClient):
     """Test that a 404 error is returned when trying to delete a nonexistent file."""
-    response = client.delete(f"/files/{NON_EXISTENT_FILE_PATH}")
+    response = client.delete(f"/v1/files/{NON_EXISTENT_FILE_PATH}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
     assert response.json() == {"detail": f"File not found: {NON_EXISTENT_FILE_PATH}"}
 

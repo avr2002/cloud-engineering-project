@@ -11,7 +11,7 @@ TEST_FILE_CONTENT_TYPE = "text/plain"
 def test_upload_file(client: TestClient):
     """Test uploading/updating a file to the bucket using PUT method."""
     response = client.put(
-        f"/files/{TEST_FILE_PATH}",
+        f"/v1/files/{TEST_FILE_PATH}",
         files={"file": (TEST_FILE_PATH, TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
 
@@ -24,7 +24,7 @@ def test_upload_file(client: TestClient):
     # update the file
     updated_content = b"Hello, world! Updated!"
     response = client.put(
-        f"/files/{TEST_FILE_PATH}",
+        f"/v1/files/{TEST_FILE_PATH}",
         files={"file": (TEST_FILE_PATH, updated_content, TEST_FILE_PATH)},
     )
 
@@ -40,7 +40,7 @@ def test_list_files_with_pagination(client: TestClient):
     # Upload files
     for i in range(15):
         client.put(
-            f"/files/file{i}.txt",
+            f"/v1/files/file{i}.txt",
             files={"file": (f"file{i}.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
         )
     # List files with page size 10
@@ -55,12 +55,12 @@ def test_get_file_metadata(client: TestClient):
     """Test getting metadata for a file using HEAD method."""
     # Create sample file
     client.put(
-        url=f"/files/{TEST_FILE_PATH}",
+        url=f"/v1/files/{TEST_FILE_PATH}",
         files={"file": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
 
     # Query metadata for existing file
-    response = client.head(f"/files/{TEST_FILE_PATH}")
+    response = client.head(f"/v1/files/{TEST_FILE_PATH}")
     assert response.status_code == status.HTTP_200_OK
     assert response.headers["Content-Type"] == TEST_FILE_CONTENT_TYPE
     assert response.headers["Content-Length"] == str(len(TEST_FILE_CONTENT))
@@ -70,12 +70,12 @@ def test_get_file(client: TestClient):
     """Test getting a file using GET method."""
     # Create sample file
     client.put(
-        url=f"/files/{TEST_FILE_PATH}",
+        url=f"/v1/files/{TEST_FILE_PATH}",
         files={"file": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
 
     # Query a existing file
-    response = client.get(f"/files/{TEST_FILE_PATH}")
+    response = client.get(f"/v1/files/{TEST_FILE_PATH}")
     assert response.status_code == status.HTTP_200_OK
     assert response.headers["Content-Type"] == TEST_FILE_CONTENT_TYPE
     assert response.headers["Content-Length"] == str(len(TEST_FILE_CONTENT))
@@ -86,10 +86,10 @@ def test_delete_file(client: TestClient):
     """Test deleting a file using DELETE method."""
     # Create sample file
     client.put(
-        url=f"/files/{TEST_FILE_PATH}",
+        url=f"/v1/files/{TEST_FILE_PATH}",
         files={"file": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
 
     # Delete existing file
-    response = client.delete(f"/files/{TEST_FILE_PATH}")
+    response = client.delete(f"/v1/files/{TEST_FILE_PATH}")
     assert response.status_code == status.HTTP_204_NO_CONTENT
