@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import (
     List,
     Optional,
-    Self,
 )
 
 from pydantic import (
@@ -12,6 +11,7 @@ from pydantic import (
     Field,
     model_validator,
 )
+from typing_extensions import Self
 
 DEFAULT_GET_FILES_PAGE_SIZE = 10
 DEFAULT_GET_FILES_MIN_PAGE_SIZE = 1
@@ -38,7 +38,7 @@ class PutFileResponse(BaseModel):
 
 # read (cRud)
 class GetFilesQueryParams(BaseModel):
-    """Query parameters for GET /files."""
+    """Query parameters for GET /v1/files."""
 
     page_size: int = Field(
         default=DEFAULT_GET_FILES_PAGE_SIZE,
@@ -52,7 +52,7 @@ class GetFilesQueryParams(BaseModel):
     def check_page_token(self) -> Self:
         """Ensure that page_token is mutually exclusive with page_size and directory."""
         if self.page_token:
-            get_files_query_params: dict = self.model_dump(exclude_unset=True)
+            get_files_query_params: dict = self.model_dump(exclude_defaults=True)
             page_size_set: bool = "page_size" in get_files_query_params.keys()
             directory_set: bool = "directory" in get_files_query_params.keys()
             if page_size_set or directory_set:

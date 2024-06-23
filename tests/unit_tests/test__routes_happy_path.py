@@ -44,7 +44,7 @@ def test_list_files_with_pagination(client: TestClient):
             files={"file": (f"file{i}.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
         )
     # List files with page size 10
-    response = client.get("/files?page_size=10")
+    response = client.get("/v1/files?page_size=10")
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
     assert len(data["files"]) == 10
