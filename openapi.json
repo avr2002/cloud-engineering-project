@@ -163,11 +163,11 @@
         }
       }
     },
-    "/files": {
+    "/v1/files": {
       "get": {
         "summary": "List Files",
         "description": "List files with pagination.",
-        "operationId": "list_files_files_get",
+        "operationId": "list_files_v1_files_get",
         "parameters": [
           {
             "name": "page_size",
@@ -308,7 +308,7 @@
           "next_page_token"
         ],
         "title": "GetFilesResponse",
-        "description": "Response model for GET /v1/files/{file_path}."
+        "description": "Response model for GET /files/{file_path}."
       },
       "HTTPValidationError": {
         "properties": {
@@ -340,7 +340,7 @@
           "message"
         ],
         "title": "PutFileResponse",
-        "description": "Response model for PUT /v1/files/{file_path}."
+        "description": "Response model for PUT /files/{file_path}."
       },
       "ValidationError": {
         "properties": {
