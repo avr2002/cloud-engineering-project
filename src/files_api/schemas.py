@@ -30,7 +30,7 @@ class FileMetadata(BaseModel):
 
 # create/update (Crud)
 class PutFileResponse(BaseModel):
-    """Response model for PUT /files/{file_path}."""
+    """Response model for PUT /v1/files/{file_path}."""
 
     file_path: str
     message: str
@@ -38,7 +38,7 @@ class PutFileResponse(BaseModel):
 
 # read (cRud)
 class GetFilesQueryParams(BaseModel):
-    """Query parameters for GET /files."""
+    """Query parameters for GET /v1/files."""
 
     page_size: int = Field(
         default=DEFAULT_GET_FILES_PAGE_SIZE,
@@ -62,7 +62,7 @@ class GetFilesQueryParams(BaseModel):
 
 # read (cRud)
 class GetFilesResponse(BaseModel):
-    """Response model for GET /files/{file_path}."""
+    """Response model for GET /v1/files/{file_path}."""
 
     files: List[FileMetadata]
     next_page_token: Optional[str]
@@ -70,6 +70,6 @@ class GetFilesResponse(BaseModel):
 
 # delete (cruD)
 class DeleteFileResponse(BaseModel):
-    """Response model for DELETE /files/{file_path}."""
+    """Response model for DELETE /v1/files/{file_path}."""
 
     message: str
