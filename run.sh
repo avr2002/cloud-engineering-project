@@ -20,6 +20,29 @@ function install {
     python -m pip install --editable "$THIS_DIR/[dev]"
 }
 
+
+function install-generated-sdk {
+    python -m pip install --upgrade pip
+    python -m pip install -e "$THIS_DIR/files-api-sdk/" \
+        --config-settings editable_mode=strict
+}
+
+
+function generate-client-library {
+    # Get the current user ID and group ID
+    USER_ID=$(id -u)
+    GROUP_ID=$(id -g)
+
+    docker run --rm \
+    --user $USER_ID:$GROUP_ID \
+    -v $PWD:/local openapitools/openapi-generator-cli generate \
+    --generator-name python-pydantic-v1 \
+    --input-spec /local/openapi.json \
+    --output /local/files-api-sdk \
+    --package-name files_api_sdk
+}
+
+
 function run {
     AWS_PROFILE=cloud-course\
     S3_BUCKET_NAME=some-bucket\
@@ -163,7 +186,7 @@ function clean {
         -o -name "*.egg-info" \
         -o -name "*htmlcov" \
       \) \
-      -not -path "*env/*" \
+      -not -path "*env*/*" \
       -exec rm -r {} + || true
 
     find . \

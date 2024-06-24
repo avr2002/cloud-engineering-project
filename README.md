@@ -1,4 +1,4 @@
-# cloud-engineering-project
+# Cloud Engineering Project
 
 ## Quick start
 
