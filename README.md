@@ -1,5 +1,15 @@
 # Cloud Engineering Project
 
+<p>
+<a href="https://www.linkedin.com/in/avr27/" target="_blank">
+        <img src="https://img.shields.io/badge/Maintained%20by-Amit%20Vikram%20Raj-F4BBFF?style=for-the-badge">
+</a>
+<a href="https://mlops-club.org" target="_blank">
+    <img src="https://img.shields.io/badge/Memember%20of-MLOps%20Club-05998B?style=for-the-badge">
+</a>
+</p>
+
+
 ## Quick start
 
 ```bash
