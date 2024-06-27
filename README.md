@@ -24,7 +24,7 @@ You will need the following installed on your machine to develop on this codebas
 
 ```bash
 # clone the repo
-git clone https://github.com/<your github username>/cloud-engineering-project.git
+git clone https://github.com/avr2002/cloud-engineering-project.git
 
 # install the dev dependencies
 make install

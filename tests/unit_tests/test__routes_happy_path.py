@@ -12,7 +12,7 @@ def test_upload_file(client: TestClient):
     """Test uploading/updating a file to the bucket using PUT method."""
     response = client.put(
         f"/v1/files/{TEST_FILE_PATH}",
-        files={"file": (TEST_FILE_PATH, TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
+        files={"file_content": (TEST_FILE_PATH, TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -25,7 +25,7 @@ def test_upload_file(client: TestClient):
     updated_content = b"Hello, world! Updated!"
     response = client.put(
         f"/v1/files/{TEST_FILE_PATH}",
-        files={"file": (TEST_FILE_PATH, updated_content, TEST_FILE_PATH)},
+        files={"file_content": (TEST_FILE_PATH, updated_content, TEST_FILE_PATH)},
     )
 
     assert response.status_code == status.HTTP_200_OK
@@ -41,7 +41,7 @@ def test_list_files_with_pagination(client: TestClient):
     for i in range(15):
         client.put(
             f"/v1/files/file{i}.txt",
-            files={"file": (f"file{i}.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
+            files={"file_content": (f"file{i}.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
         )
     # List files with page size 10
     response = client.get("/v1/files?page_size=10")
@@ -56,7 +56,7 @@ def test_get_file_metadata(client: TestClient):
     # Create sample file
     client.put(
         url=f"/v1/files/{TEST_FILE_PATH}",
-        files={"file": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
+        files={"file_content": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
 
     # Query metadata for existing file
@@ -71,7 +71,7 @@ def test_get_file(client: TestClient):
     # Create sample file
     client.put(
         url=f"/v1/files/{TEST_FILE_PATH}",
-        files={"file": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
+        files={"file_content": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
 
     # Query a existing file
@@ -87,7 +87,7 @@ def test_delete_file(client: TestClient):
     # Create sample file
     client.put(
         url=f"/v1/files/{TEST_FILE_PATH}",
-        files={"file": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
+        files={"file_content": ("folder1/file1.txt", TEST_FILE_CONTENT, TEST_FILE_CONTENT_TYPE)},
     )
 
     # Delete existing file
