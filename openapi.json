@@ -1,15 +1,29 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "FastAPI",
-    "version": "0.1.0"
+    "title": "Files API",
+    "summary": "Store and Retrieve Files.",
+    "description": "<a href=\"https://github.com/avr2002\" target=\"_blank\">            <img src=\"https://img.shields.io/badge/Maintained%20by-Amit%20Vikram%20Raj-F4BBFF?style=for-the-badge\">        </a>\n\n| Helpful Links | Notes |\n| --- | --- |\n| [MLOps Club](https://mlops-club.org) | ![MLOps Club](https://img.shields.io/badge/Memember%20of-MLOps%20Club-05998B?style=for-the-badge) |\n| [Project Repo](https://github.com/avr2002/cloud-engineering-project) | `avr2002/cloud-engineering-project` |\n",
+    "contact": {
+      "name": "Amit",
+      "url": "https://www.linkedin.com/in/avr27/",
+      "email": "avr13405@gmail.com"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "identifier": "MIT"
+    },
+    "version": "v1"
   },
   "paths": {
     "/v1/files/{file_path}": {
       "put": {
+        "tags": [
+          "Files"
+        ],
         "summary": "Upload File",
-        "description": "Upload or update a file to an S3 bucket.",
-        "operationId": "upload_file_v1_files__file_path__put",
+        "description": "Upload or Update a File.",
+        "operationId": "Files-upload_file",
         "parameters": [
           {
             "name": "file_path",
@@ -17,8 +31,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "The path to the file.",
               "title": "File Path"
-            }
+            },
+            "description": "The path to the file."
           }
         ],
         "requestBody": {
@@ -26,7 +42,7 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/Body_upload_file_v1_files__file_path__put"
+                "$ref": "#/components/schemas/Body_Files-upload_file"
               }
             }
           }
@@ -38,9 +54,24 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PutFileResponse"
+                },
+                "example": {
+                  "file_path": "path/to/file.txt",
+                  "message": "Existing file updated at path: path/to/file.txt"
                 }
               }
             }
+          },
+          "201": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "file_path": "path/to/file.txt",
+                  "message": "New file uploaded at path: path/to/file.txt"
+                }
+              }
+            },
+            "description": "Created"
           },
           "422": {
             "description": "Validation Error",
@@ -55,9 +86,12 @@
         }
       },
       "head": {
+        "tags": [
+          "Files"
+        ],
         "summary": "Get File Metadata",
-        "description": "Retrieve file metadata.\n\nNote: by convention, HEAD requests MUST NOT return a body in the response.",
-        "operationId": "get_file_metadata_v1_files__file_path__head",
+        "description": "Retrieve File Metadata.\n\nNote: by convention, HEAD requests MUST NOT return a body in the response.",
+        "operationId": "Files-get_file_metadata",
         "parameters": [
           {
             "name": "file_path",
@@ -75,6 +109,45 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            },
+            "headers": {
+              "Content-Type": {
+                "description": "The [MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types) of the file.",
+                "example": "text/plain",
+                "schema": {
+                  "type": "string",
+                  "format": "text"
+                }
+              },
+              "Content-Length": {
+                "description": "The size of the file in bytes.",
+                "example": 512,
+                "schema": {
+                  "type": "integer",
+                  "format": "integer"
+                }
+              },
+              "Last-Modified": {
+                "description": "The last modified date of the file.",
+                "example": "Thu, 01 Jan 2022 00:00:00 GMT",
+                "schema": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found for the given `file_path`.",
+            "headers": {
+              "X-Error": {
+                "description": "Error message indicating the file was not found.",
+                "example": "File not found: `path/to/file.txt`",
+                "schema": {
+                  "type": "string",
+                  "format": "text"
+                }
               }
             }
           },
@@ -91,9 +164,12 @@
         }
       },
       "get": {
+        "tags": [
+          "Files"
+        ],
         "summary": "Get File",
-        "description": "Retrieve a file.",
-        "operationId": "get_file_v1_files__file_path__get",
+        "description": "Retrieve a File.",
+        "operationId": "Files-get_file",
         "parameters": [
           {
             "name": "file_path",
@@ -101,16 +177,54 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "The path to the file.",
               "title": "File Path"
-            }
+            },
+            "description": "The path to the file."
           }
         ],
         "responses": {
           "200": {
             "description": "Successful Response",
             "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string",
+                  "format": "text"
+                },
+                "example": "File Content."
+              },
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            },
+            "headers": {
+              "Content-Type": {
+                "description": "The [MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types) of the file.",
+                "example": "text/plain",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Content-Length": {
+                "description": "The size of the file in bytes.",
+                "example": 512,
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "File not found for the given `file_path`.",
+            "content": {
               "application/json": {
-                "schema": {}
+                "example": {
+                  "detail": "File not found: path/to/file.txt"
+                }
               }
             }
           },
@@ -127,9 +241,12 @@
         }
       },
       "delete": {
+        "tags": [
+          "Files"
+        ],
         "summary": "Delete File",
         "description": "Delete a file.\n\nNOTE: DELETE requests MUST NOT return a body in the response.",
-        "operationId": "delete_file_v1_files__file_path__delete",
+        "operationId": "Files-delete_file",
         "parameters": [
           {
             "name": "file_path",
@@ -137,18 +254,18 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "The path to the file.",
               "title": "File Path"
-            }
+            },
+            "description": "The path to the file."
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            }
+          "204": {
+            "description": "File deleted successfully."
+          },
+          "404": {
+            "description": "File not found."
           },
           "422": {
             "description": "Validation Error",
@@ -165,9 +282,12 @@
     },
     "/v1/files": {
       "get": {
+        "tags": [
+          "Files"
+        ],
         "summary": "List Files",
-        "description": "List files with pagination.",
-        "operationId": "list_files_v1_files_get",
+        "description": "List Files with Pagination.",
+        "operationId": "Files-list_files",
         "parameters": [
           {
             "name": "page_size",
@@ -222,6 +342,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GetFilesResponse"
+                },
+                "examples": {
+                  "With Pagination": {
+                    "files": [
+                      {
+                        "file_path": "path/to/file1.txt",
+                        "last_modified": "2021-09-01T12:00:00",
+                        "size_bytes": 512
+                      },
+                      {
+                        "file_path": "path/to/file2.txt",
+                        "last_modified": "2021-09-02T12:00:00",
+                        "size_bytes": 256
+                      }
+                    ],
+                    "next_page_token": "next_page_token_value"
+                  },
+                  "No Pages Left": {
+                    "files": [
+                      {
+                        "file_path": "path/to/file1.txt",
+                        "last_modified": "2021-09-01T12:00:00",
+                        "size_bytes": 512
+                      },
+                      {
+                        "file_path": "path/to/file2.txt",
+                        "last_modified": "2021-09-02T12:00:00",
+                        "size_bytes": 256
+                      }
+                    ],
+                    "next_page_token": "null"
+                  }
                 }
               }
             }
@@ -242,34 +394,41 @@
   },
   "components": {
     "schemas": {
-      "Body_upload_file_v1_files__file_path__put": {
+      "Body_Files-upload_file": {
         "properties": {
-          "file": {
+          "file_content": {
             "type": "string",
             "format": "binary",
-            "title": "File"
+            "title": "File Content",
+            "description": "The file to upload."
           }
         },
         "type": "object",
         "required": [
-          "file"
+          "file_content"
         ],
-        "title": "Body_upload_file_v1_files__file_path__put"
+        "title": "Body_Files-upload_file"
       },
       "FileMetadata": {
         "properties": {
           "file_path": {
             "type": "string",
-            "title": "File Path"
+            "title": "File Path",
+            "description": "The path to the file.",
+            "example": "path/to/file.txt"
           },
           "last_modified": {
             "type": "string",
             "format": "date-time",
-            "title": "Last Modified"
+            "title": "Last Modified",
+            "description": "The last modified timestamp of the file.",
+            "example": "2021-09-01T12:00:00"
           },
           "size_bytes": {
             "type": "integer",
-            "title": "Size Bytes"
+            "title": "Size Bytes",
+            "description": "The size of the file in bytes.",
+            "example": 512
           }
         },
         "type": "object",
@@ -279,7 +438,7 @@
           "size_bytes"
         ],
         "title": "FileMetadata",
-        "description": "Model for file metadata."
+        "description": "`Metadata` of a file."
       },
       "GetFilesResponse": {
         "properties": {
@@ -308,7 +467,39 @@
           "next_page_token"
         ],
         "title": "GetFilesResponse",
-        "description": "Response model for GET /v1/files/{file_path}."
+        "description": "Response model for `GET /v1/files/:file_path`.",
+        "examples": [
+          {
+            "files": [
+              {
+                "file_path": "path/to/file1.txt",
+                "last_modified": "2021-09-01T12:00:00",
+                "size_bytes": 512
+              },
+              {
+                "file_path": "path/to/file2.txt",
+                "last_modified": "2021-09-02T12:00:00",
+                "size_bytes": 256
+              }
+            ],
+            "next_page_token": "next_page_token_value"
+          },
+          {
+            "files": [
+              {
+                "file_path": "path/to/file1.txt",
+                "last_modified": "2021-09-01T12:00:00",
+                "size_bytes": 512
+              },
+              {
+                "file_path": "path/to/file2.txt",
+                "last_modified": "2021-09-02T12:00:00",
+                "size_bytes": 256
+              }
+            ],
+            "next_page_token": "null"
+          }
+        ]
       },
       "HTTPValidationError": {
         "properties": {
@@ -327,11 +518,15 @@
         "properties": {
           "file_path": {
             "type": "string",
-            "title": "File Path"
+            "title": "File Path",
+            "description": "The path to the file.",
+            "example": "path/to/file.txt"
           },
           "message": {
             "type": "string",
-            "title": "Message"
+            "title": "Message",
+            "description": "The message indicating the status of the operation.",
+            "example": "New file uploaded at path: path/to/file.txt"
           }
         },
         "type": "object",
@@ -340,7 +535,27 @@
           "message"
         ],
         "title": "PutFileResponse",
-        "description": "Response model for PUT /v1/files/{file_path}."
+        "description": "Response model for `PUT /v1/files/:file_path`.",
+        "200": {
+          "content": {
+            "application/json": {
+              "example": {
+                "file_path": "path/to/file.txt",
+                "message": "Existing file updated at path: path/to/file.txt"
+              }
+            }
+          }
+        },
+        "201": {
+          "content": {
+            "application/json": {
+              "example": {
+                "file_path": "path/to/file.txt",
+                "message": "New file uploaded at path: path/to/file.txt"
+              }
+            }
+          }
+        }
       },
       "ValidationError": {
         "properties": {

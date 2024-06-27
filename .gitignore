@@ -1,6 +1,9 @@
 # Python .gitignore template from
 # https://github.com/github/gitignore/blob/main/Python.gitignore
 
+# ignore openapi generated client sdk generated files
+files-api-sdk/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -125,7 +128,7 @@ celerybeat.pid
 
 # Environments
 .env
-.venv
+.venv*/
 env/
 venv/
 ENV/

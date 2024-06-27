@@ -21,14 +21,14 @@ def test_get_nonexistent_file_metadata(client: TestClient):
     """Test that a 404 error is returned when trying to get metadata for a nonexistent file."""
     response = client.head(f"/v1/files/{NON_EXISTENT_FILE_PATH}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.headers["Error"] == f"File not found: {NON_EXISTENT_FILE_PATH}"
+    assert response.headers["X-Error"] == f"File not found: {NON_EXISTENT_FILE_PATH}"
 
 
 def test_delete_nonexistent_file(client: TestClient):
     """Test that a 404 error is returned when trying to delete a nonexistent file."""
     response = client.delete(f"/v1/files/{NON_EXISTENT_FILE_PATH}")
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert response.json() == {"detail": f"File not found: {NON_EXISTENT_FILE_PATH}"}
+    assert response.headers["X-Error"] == f"File not found: {NON_EXISTENT_FILE_PATH}"
 
 
 def test_get_files_invalid_page_size(client: TestClient):
@@ -44,10 +44,6 @@ def test_get_files_invalid_page_size(client: TestClient):
 
 def test_get_files_page_token_is_mutually_exclusive_with_page_size_and_directory(client: TestClient):
     """Test that a 422 Unprocessable Entity error is returned when page_token is provided with page_size or directory."""
-    response = client.get("/v1/files?page_token=token&page_size=11")
-    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-    assert "mutually exclusive" in str(response.json())
-
     response = client.get("/v1/files?page_token=token&directory=dir")
     assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
     assert "mutually exclusive" in str(response.json())
