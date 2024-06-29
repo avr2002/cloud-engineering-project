@@ -48,8 +48,8 @@
           }
         },
         "responses": {
-          "200": {
-            "description": "Successful Response",
+          "201": {
+            "description": "File uploaded successfully.",
             "content": {
               "application/json": {
                 "schema": {
@@ -57,21 +57,24 @@
                 },
                 "example": {
                   "file_path": "path/to/file.txt",
-                  "message": "Existing file updated at path: path/to/file.txt"
+                  "message": "New file uploaded at path: path/to/file.txt"
                 }
               }
             }
           },
-          "201": {
+          "200": {
+            "description": "File updated successfully.",
             "content": {
               "application/json": {
                 "example": {
                   "file_path": "path/to/file.txt",
-                  "message": "New file uploaded at path: path/to/file.txt"
+                  "message": "Existing file updated at path: path/to/file.txt"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/PutFileResponse"
                 }
               }
-            },
-            "description": "Created"
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -345,34 +348,38 @@
                 },
                 "examples": {
                   "With Pagination": {
-                    "files": [
-                      {
-                        "file_path": "path/to/file1.txt",
-                        "last_modified": "2021-09-01T12:00:00",
-                        "size_bytes": 512
-                      },
-                      {
-                        "file_path": "path/to/file2.txt",
-                        "last_modified": "2021-09-02T12:00:00",
-                        "size_bytes": 256
-                      }
-                    ],
-                    "next_page_token": "next_page_token_value"
+                    "value": {
+                      "files": [
+                        {
+                          "file_path": "path/to/file1.txt",
+                          "last_modified": "2021-09-01T12:00:00",
+                          "size_bytes": 512
+                        },
+                        {
+                          "file_path": "path/to/file2.txt",
+                          "last_modified": "2021-09-02T12:00:00",
+                          "size_bytes": 256
+                        }
+                      ],
+                      "next_page_token": "next_page_token_value"
+                    }
                   },
                   "No Pages Left": {
-                    "files": [
-                      {
-                        "file_path": "path/to/file1.txt",
-                        "last_modified": "2021-09-01T12:00:00",
-                        "size_bytes": 512
-                      },
-                      {
-                        "file_path": "path/to/file2.txt",
-                        "last_modified": "2021-09-02T12:00:00",
-                        "size_bytes": 256
-                      }
-                    ],
-                    "next_page_token": "null"
+                    "value": {
+                      "files": [
+                        {
+                          "file_path": "path/to/file1.txt",
+                          "last_modified": "2021-09-01T12:00:00",
+                          "size_bytes": 512
+                        },
+                        {
+                          "file_path": "path/to/file2.txt",
+                          "last_modified": "2021-09-02T12:00:00",
+                          "size_bytes": 256
+                        }
+                      ],
+                      "next_page_token": "null"
+                    }
                   }
                 }
               }
@@ -470,34 +477,38 @@
         "description": "Response model for `GET /v1/files/:file_path`.",
         "examples": [
           {
-            "files": [
-              {
-                "file_path": "path/to/file1.txt",
-                "last_modified": "2021-09-01T12:00:00",
-                "size_bytes": 512
-              },
-              {
-                "file_path": "path/to/file2.txt",
-                "last_modified": "2021-09-02T12:00:00",
-                "size_bytes": 256
-              }
-            ],
-            "next_page_token": "next_page_token_value"
+            "value": {
+              "files": [
+                {
+                  "file_path": "path/to/file1.txt",
+                  "last_modified": "2021-09-01T12:00:00",
+                  "size_bytes": 512
+                },
+                {
+                  "file_path": "path/to/file2.txt",
+                  "last_modified": "2021-09-02T12:00:00",
+                  "size_bytes": 256
+                }
+              ],
+              "next_page_token": "next_page_token_value"
+            }
           },
           {
-            "files": [
-              {
-                "file_path": "path/to/file1.txt",
-                "last_modified": "2021-09-01T12:00:00",
-                "size_bytes": 512
-              },
-              {
-                "file_path": "path/to/file2.txt",
-                "last_modified": "2021-09-02T12:00:00",
-                "size_bytes": 256
-              }
-            ],
-            "next_page_token": "null"
+            "value": {
+              "files": [
+                {
+                  "file_path": "path/to/file1.txt",
+                  "last_modified": "2021-09-01T12:00:00",
+                  "size_bytes": 512
+                },
+                {
+                  "file_path": "path/to/file2.txt",
+                  "last_modified": "2021-09-02T12:00:00",
+                  "size_bytes": 256
+                }
+              ],
+              "next_page_token": "null"
+            }
           }
         ]
       },

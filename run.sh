@@ -22,14 +22,16 @@ function install {
 
 
 function install-generated-sdk {
+    # install the generated SDK in newly created venv
     python -m pip install --upgrade pip
-    python -m pip install -e "$THIS_DIR/files-api-sdk/" \
+    python -m pip install --editable "$THIS_DIR/files-api-sdk/" \
         --config-settings editable_mode=strict
 }
 
 
 function generate-client-library {
-    # Get the current user ID and group ID
+    # Get the current user ID and group ID to run the docker command with so that 
+    # the generated SDK folder doesn't have root permissions, instead user level permission
     USER_ID=$(id -u)
     GROUP_ID=$(id -g)
 

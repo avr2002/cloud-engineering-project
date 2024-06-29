@@ -21,6 +21,14 @@ DEFAULT_GET_FILES_MAX_PAGE_SIZE = 100
 DEFAULT_GET_FILES_DIRECTORY = ""
 
 
+# from pydantic.alias_generators import to_camel
+# class BaseSchema(BaseModel):
+#     model_config = ConfigDict(
+#         alias_generator=to_camel,
+#         populate_by_name=True,
+#     )
+
+
 # read (cRud)
 class FileMetadata(BaseModel):
     """`Metadata` of a file."""
@@ -122,34 +130,38 @@ class GetFilesResponse(BaseModel):
         json_schema_extra={
             "examples": [
                 {
-                    "files": [
-                        {
-                            "file_path": "path/to/file1.txt",
-                            "last_modified": "2021-09-01T12:00:00",
-                            "size_bytes": 512,
-                        },
-                        {
-                            "file_path": "path/to/file2.txt",
-                            "last_modified": "2021-09-02T12:00:00",
-                            "size_bytes": 256,
-                        },
-                    ],
-                    "next_page_token": "next_page_token_value",
+                    "value": {
+                        "files": [
+                            {
+                                "file_path": "path/to/file1.txt",
+                                "last_modified": "2021-09-01T12:00:00",
+                                "size_bytes": 512,
+                            },
+                            {
+                                "file_path": "path/to/file2.txt",
+                                "last_modified": "2021-09-02T12:00:00",
+                                "size_bytes": 256,
+                            },
+                        ],
+                        "next_page_token": "next_page_token_value",
+                    }
                 },
                 {
-                    "files": [
-                        {
-                            "file_path": "path/to/file1.txt",
-                            "last_modified": "2021-09-01T12:00:00",
-                            "size_bytes": 512,
-                        },
-                        {
-                            "file_path": "path/to/file2.txt",
-                            "last_modified": "2021-09-02T12:00:00",
-                            "size_bytes": 256,
-                        },
-                    ],
-                    "next_page_token": "null",
+                    "value": {
+                        "files": [
+                            {
+                                "file_path": "path/to/file1.txt",
+                                "last_modified": "2021-09-01T12:00:00",
+                                "size_bytes": 512,
+                            },
+                            {
+                                "file_path": "path/to/file2.txt",
+                                "last_modified": "2021-09-02T12:00:00",
+                                "size_bytes": 256,
+                            },
+                        ],
+                        "next_page_token": "null",
+                    }
                 },
             ]
         }

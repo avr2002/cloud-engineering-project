@@ -36,11 +36,16 @@ ROUTER = APIRouter(tags=["Files"])
 
 @ROUTER.put(
     "/v1/files/{file_path:path}",
+    status_code=status.HTTP_201_CREATED,
     responses={
         status.HTTP_201_CREATED: {
+            "model": PutFileResponse,
+            "description": "File uploaded successfully.",
             "content": PutFileResponse.model_json_schema()[str(status.HTTP_201_CREATED)]["content"],
         },
         status.HTTP_200_OK: {
+            "model": PutFileResponse,
+            "description": "File updated successfully.",
             "content": PutFileResponse.model_json_schema()[str(status.HTTP_200_OK)]["content"],
         },
     },
@@ -76,6 +81,7 @@ async def upload_file(
     "/v1/files",
     responses={
         status.HTTP_200_OK: {
+            "model": GetFilesResponse,
             "description": "Successful Response",
             "content": {
                 "application/json": {
@@ -267,3 +273,25 @@ async def delete_file(
     delete_s3_object(bucket_name=s3_bucket_name, object_key=file_path)
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
+
+
+# @ROUTER.put("/v1/files/openai/{file_path:path}")
+# async def upload_file_from_openai(
+#     request: Request,
+#     file_path: Annotated[str, Path(description="The path to the file.")],
+# ) -> PutFileResponse:
+#     """Upload a File from OpenAI."""
+#     settings: Settings = request.app.state.settings
+#     s3_bucket_name = settings.s3_bucket_name
+
+#     # generate ai content using openai
+#     file_content = generate_ai_content()
+
+
+#     upload_s3_object(
+#         bucket_name=s3_bucket_name,
+#         object_key=file_path,
+#         file_content=file_bytes,
+#         content_type=file_content.content_type,
+#     )
+#     return PutFileResponse(file_path=file_path, message=f"New file uploaded at path: {file_path}")
