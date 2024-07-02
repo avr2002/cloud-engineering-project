@@ -1,18 +1,34 @@
 # Publish the lambda code to AWS Lambda using the AWS CLI
 # aws --cli-auto-prompt # Enable auto prompt for the AWS CLI
 
+set -ex
+
+
 # Clean up the artifacts, lambda-env directory and lambda.zip file if they exist
 rm -rf lambda-env || true
 rm lambda-layer.zip || true
 rm lambda.zip || true
 
 
-# Install the required packages to the lambda-env directory
-# https://docs.aws.amazon.com/lambda/latest/dg/python-layers.html#python-layer-paths
+# Install dependencies in a docker container: https://gallery.ecr.aws/
 
-# create a directory called python in the lambda-env directory for the dependencies to be installed in.
-mkdir -p lambda-env/python
-pip install --target ./lambda-env/python -r requirements.txt
+# Get the current user ID and group ID
+USER_ID=$(id -u)
+GROUP_ID=$(id -g)
+
+docker logout || true
+docker pull public.ecr.aws/lambda/python:3.12-arm64
+docker run --rm \
+    --user $USER_ID:$GROUP_ID \
+    --volume $(pwd):/out \
+    --entrypoint /bin/bash \
+    public.ecr.aws/lambda/python:3.12-arm64 \
+    -c ' \
+    pip install \
+        -r /out/requirements.txt \
+        --target /out/lambda-env/python \
+    '
+
 
 # Bundle the dependencies into a zip file to create a lambda layer
 cd lambda-env
@@ -42,7 +58,7 @@ LAYER_VERSION_ARN=$(aws lambda publish-layer-version \
     --layer-name cloud-course-python-deps \
     --compatible-runtimes python3.12 \
     --zip-file fileb://./lambda-layer.zip \
-    --compatible-architectures x86_64 \
+    --compatible-architectures arm64 \
     --query 'LayerVersionArn' \
     --output text | cat)
 
