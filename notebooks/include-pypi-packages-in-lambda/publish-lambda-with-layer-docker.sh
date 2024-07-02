@@ -12,7 +12,9 @@ rm lambda.zip || true
 
 # Install dependencies in a docker container: https://gallery.ecr.aws/
 
-# Get the current user ID and group ID
+# Get the current user ID and group ID to run the docker command with so that 
+# the generated lambda-env folder doesn't have root permissions, instead user level permission
+# This will help in cleaning up the lambda-env folder later
 USER_ID=$(id -u)
 GROUP_ID=$(id -g)
 
