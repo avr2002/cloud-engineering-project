@@ -182,3 +182,17 @@ class GeneratedFileType(str, Enum):
     TEXT = "text"
     IMAGE = "image"
     AUDIO = "audio"
+
+
+# create/update (Crud)
+class PostFileResponse(BaseModel):
+    """Response model for `POST /v1/files/generated/:file_path`."""
+
+    file_path: str = Field(
+        description="The path to the file.",
+        json_schema_extra={"example": "path/to/file.txt"},
+    )
+    message: str = Field(
+        description="The message indicating the status of the operation.",
+        json_schema_extra={"example": "New file generated and uploaded at path: path/to/file.txt"},
+    )

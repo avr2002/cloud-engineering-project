@@ -18,10 +18,10 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 
-from files_api.openai import (
+from files_api.generate import (
+    generate_image,
     generate_text_to_speech,
     get_text_chat_completion,
-    generate_image,
 )
 from files_api.s3.delete_objects import delete_s3_object
 from files_api.s3.read_objects import (
@@ -36,16 +36,18 @@ from files_api.schemas import (
     GeneratedFileType,
     GetFilesQueryParams,
     GetFilesResponse,
+    PostFileResponse,
     PutFileResponse,
 )
 from files_api.settings import Settings
 
-ROUTER = APIRouter(tags=["Files"])
+ROUTER = APIRouter()
 
 
 @ROUTER.put(
     "/v1/files/{file_path:path}",
     status_code=status.HTTP_201_CREATED,
+    tags=["Files"],
     responses={
         status.HTTP_201_CREATED: {
             "model": PutFileResponse,
@@ -88,6 +90,7 @@ async def upload_file(
 
 @ROUTER.get(
     "/v1/files",
+    tags=["Files"],
     responses={
         status.HTTP_200_OK: {
             "model": GetFilesResponse,
@@ -139,6 +142,7 @@ async def list_files(
 
 @ROUTER.head(
     "/v1/files/{file_path:path}",
+    tags=["Files"],
     responses={
         status.HTTP_404_NOT_FOUND: {
             "description": "File not found for the given `file_path`.",
@@ -198,6 +202,7 @@ async def get_file_metadata(file_path: str, request: Request, response: Response
 
 @ROUTER.get(
     "/v1/files/{file_path:path}",
+    tags=["Files"],
     responses={
         status.HTTP_404_NOT_FOUND: {
             "description": "File not found for the given `file_path`.",
@@ -247,6 +252,11 @@ async def get_file(
     get_object_response = fetch_s3_object(bucket_name=s3_bucket_name, object_key=file_path)
     response.headers["Content-Type"] = get_object_response["ContentType"]
     response.headers["Content-Length"] = str(get_object_response["ContentLength"])
+    # If the file is a PDF, set the Content-Disposition header to force download
+    if response.headers["Content-Type"] == "application/pdf":
+        response.headers["Content-Disposition"] = f'attachment; filename="{file_path}"'
+        # response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+
     response.status_code = status.HTTP_200_OK
     return StreamingResponse(
         content=get_object_response["Body"],
@@ -257,6 +267,7 @@ async def get_file(
 
 @ROUTER.delete(
     "/v1/files/{file_path:path}",
+    tags=["Files"],
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_204_NO_CONTENT: {"description": "File deleted successfully."},
@@ -284,14 +295,19 @@ async def delete_file(
     return response
 
 
-@ROUTER.post("/v1/files/generated/{file_path:path}")
+@ROUTER.post(
+    "/v1/files/generated/{file_path:path}",
+    status_code=status.HTTP_201_CREATED,
+    tags=["Generate Files"],
+    summary="Generate a File using OpenAI.",
+)
 async def generate_file_using_openai(
     request: Request,
     response: Response,
     file_path: Annotated[str, Path(..., description="The path to the file.")],
     prompt: Annotated[str, Query(..., description="The prompt to generate the file.")],
     file_type: Annotated[GeneratedFileType, Query(..., description="The file type to generate.")],
-) -> PutFileResponse:
+) -> PostFileResponse:
     """Generate a File using OpenAI."""
     settings: Settings = request.app.state.settings
     s3_bucket_name = settings.s3_bucket_name
@@ -308,10 +324,11 @@ async def generate_file_using_openai(
         file_content_bytes = image_response.content
         content_type = "image/png"
     else:
-        output_file = "/tmp/speech.mp3"
-        await generate_text_to_speech(prompt=prompt, output_file=output_file)
-        async with aiofiles.open(output_file, "rb") as f:
-            file_content_bytes = await f.read()
+        # output_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False).name
+        # await generate_text_to_speech(prompt=prompt, output_file=output_file)
+        # async with aiofiles.open(output_file, "rb") as f:
+        #     file_content_bytes = await f.read()
+        file_content_bytes = await generate_text_to_speech(prompt=prompt)
         content_type = "audio/mpeg"
 
     upload_s3_object(
@@ -321,4 +338,4 @@ async def generate_file_using_openai(
         content_type=content_type,
     )
     response.status_code = status.HTTP_201_CREATED
-    return PutFileResponse(file_path=file_path, message=f"New file uploaded at path: {file_path}")
+    return PostFileResponse(file_path=file_path, message=f"New {file_type.value} file generated and uploaded at path: {file_path}")

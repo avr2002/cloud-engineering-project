@@ -47,7 +47,14 @@ function generate-client-library {
 
 function run {
     AWS_PROFILE=cloud-course\
-    S3_BUCKET_NAME=some-bucket\
+    S3_BUCKET_NAME=python-aws-cloud-course-bucket\
+    uvicorn 'files_api.main:create_app' --reload
+}
+function run-local {
+    if [ -f .env ]; then
+        export $(cat .env | xargs)
+    fi
+    
     uvicorn 'files_api.main:create_app' --reload
 }
 
@@ -68,11 +75,11 @@ function run-mock {
     # create a bucket called "some-bucket" using the mocked aws server
     aws s3 mb "s3://$S3_BUCKET_NAME"
 
-    # # Start the Docker Compose to mock the OpenAI API
-    docker compose --file ./notebooks/open-ai-endpoint/docker-compose.yaml up --detach
+    # Start the Docker Compose to mock the OpenAI API
+    docker compose --file ./mock-openai-docker-compose.yaml up --detach
 
     # Trap EXIT signal to kill the moto.server process when uvicorn stops
-    trap 'kill $MOTO_PID; docker compose --file ./notebooks/open-ai-endpoint/docker-compose.yaml down' EXIT
+    trap 'kill $MOTO_PID; docker compose --file ./mock-openai-docker-compose.yaml down' EXIT
 
     # Set AWS endpoint URL and start FastAPI app with uvicorn in the foreground
     uvicorn src.files_api.main:create_app --reload
