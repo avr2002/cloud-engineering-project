@@ -50,12 +50,21 @@ function run {
     S3_BUCKET_NAME=python-aws-cloud-course-bucket\
     uvicorn 'files_api.main:create_app' --reload
 }
+
+
 function run-local {
     if [ -f .env ]; then
-        export $(cat .env | xargs)
+        export $(grep -v '^#' .env | xargs)
+        # Capture the environment variables names
+        VARS=$(grep -v '^#' .env | cut -d= -f1)
     fi
     
     uvicorn 'files_api.main:create_app' --reload
+
+    # Unset the environment variables
+    for var in $VARS; do
+        unset $var
+    done
 }
 
 # start the FastAPI app, pointed at a mocked aws endpoint
@@ -72,6 +81,10 @@ function run-mock {
     export AWS_ACCESS_KEY_ID="mock"
     export S3_BUCKET_NAME="some-bucket"
 
+    # point the OpenAI API to the mocked OpenAI server using mocked credentials
+    export OPENAI_BASE_URL="http://localhost:1080"
+    export OPENAI_API_KEY="mocked_key"
+
     # create a bucket called "some-bucket" using the mocked aws server
     aws s3 mb "s3://$S3_BUCKET_NAME"
 
@@ -83,6 +96,10 @@ function run-mock {
 
     # Set AWS endpoint URL and start FastAPI app with uvicorn in the foreground
     uvicorn src.files_api.main:create_app --reload
+
+    # # Unset the environment variables
+    unset OPENAI_BASE_URL
+    unset OPENAI_API_KEY
 
     # Wait for the moto.server process to finish (this is optional if you want to keep it running)
     wait $MOTO_PID
