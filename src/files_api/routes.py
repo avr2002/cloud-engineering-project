@@ -299,7 +299,7 @@ async def delete_file(
     "/v1/files/generated/{file_path:path}",
     status_code=status.HTTP_201_CREATED,
     tags=["Generate Files"],
-    summary="Generate a File using OpenAI.",
+    summary="AI Generated Files",
 )
 async def generate_file_using_openai(
     request: Request,
@@ -308,7 +308,7 @@ async def generate_file_using_openai(
     prompt: Annotated[str, Query(..., description="The prompt to generate the file.")],
     file_type: Annotated[GeneratedFileType, Query(..., description="The file type to generate.")],
 ) -> PostFileResponse:
-    """Generate a File using OpenAI."""
+    """Generate a File using AI."""
     settings: Settings = request.app.state.settings
     s3_bucket_name = settings.s3_bucket_name
 
