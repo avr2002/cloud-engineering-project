@@ -34,6 +34,7 @@ from files_api.s3.write_objects import upload_s3_object
 from files_api.schemas import (
     FileMetadata,
     GeneratedFileType,
+    GenerateFilesQueryParams,
     GetFilesQueryParams,
     GetFilesResponse,
     PostFileResponse,
@@ -48,6 +49,7 @@ ROUTER = APIRouter()
     "/v1/files/{file_path:path}",
     status_code=status.HTTP_201_CREATED,
     tags=["Files"],
+    summary="Upload or Update a File",
     responses={
         status.HTTP_201_CREATED: {
             "model": PutFileResponse,
@@ -91,6 +93,7 @@ async def upload_file(
 @ROUTER.get(
     "/v1/files",
     tags=["Files"],
+    summary="List Files",
     responses={
         status.HTTP_200_OK: {
             "model": GetFilesResponse,
@@ -143,6 +146,7 @@ async def list_files(
 @ROUTER.head(
     "/v1/files/{file_path:path}",
     tags=["Files"],
+    summary="Retrieve File Metadata",
     responses={
         status.HTTP_404_NOT_FOUND: {
             "description": "File not found for the given `file_path`.",
@@ -203,6 +207,7 @@ async def get_file_metadata(file_path: str, request: Request, response: Response
 @ROUTER.get(
     "/v1/files/{file_path:path}",
     tags=["Files"],
+    summary="Retrieve a File",
     responses={
         status.HTTP_404_NOT_FOUND: {
             "description": "File not found for the given `file_path`.",
@@ -268,6 +273,7 @@ async def get_file(
 @ROUTER.delete(
     "/v1/files/{file_path:path}",
     tags=["Files"],
+    summary="Delete a File",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_204_NO_CONTENT: {"description": "File deleted successfully."},
@@ -300,27 +306,37 @@ async def delete_file(
     status_code=status.HTTP_201_CREATED,
     tags=["Generate Files"],
     summary="AI Generated Files",
+    responses={
+        status.HTTP_201_CREATED: {
+            "model": PostFileResponse,
+            "description": "Successful Response",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        GeneratedFileType.TEXT: PostFileResponse.model_json_schema()["examples"][0],
+                        GeneratedFileType.IMAGE: PostFileResponse.model_json_schema()["examples"][1],
+                        GeneratedFileType.AUDIO: PostFileResponse.model_json_schema()["examples"][2],
+                    },
+                },
+            },
+        },
+    },
 )
 async def generate_file_using_openai(
-    request: Request,
-    response: Response,
-    file_path: Annotated[str, Path(..., description="The path to the file.")],
-    prompt: Annotated[str, Query(..., description="The prompt to generate the file.")],
-    file_type: Annotated[GeneratedFileType, Query(..., description="The file type to generate.")],
+    request: Request, response: Response, query_params: Annotated[GenerateFilesQueryParams, Depends()]
 ) -> PostFileResponse:
     """Generate a File using AI."""
     settings: Settings = request.app.state.settings
     s3_bucket_name = settings.s3_bucket_name
 
-    # file_content = "HELLO WORLD!"
-    if file_type == GeneratedFileType.TEXT:
-        file_content = await get_text_chat_completion(prompt=prompt)
+    if query_params.file_type == GeneratedFileType.TEXT:
+        file_content = await get_text_chat_completion(prompt=query_params.prompt)
         file_content_bytes: bytes = file_content.encode("utf-8")  # convert string to bytes
         content_type = "text/plain"
-    elif file_type == GeneratedFileType.IMAGE:
-        image_url = await generate_image(prompt=prompt)
-        # Download the image from the URL
-        image_response = requests.get(image_url)
+    elif query_params.file_type == GeneratedFileType.IMAGE:
+        image_url = await generate_image(prompt=query_params.prompt)
+
+        image_response = requests.get(image_url)  # Download the image from the URL
         file_content_bytes = image_response.content
         content_type = "image/png"
     else:
@@ -328,14 +344,17 @@ async def generate_file_using_openai(
         # await generate_text_to_speech(prompt=prompt, output_file=output_file)
         # async with aiofiles.open(output_file, "rb") as f:
         #     file_content_bytes = await f.read()
-        file_content_bytes = await generate_text_to_speech(prompt=prompt)
+        file_content_bytes = await generate_text_to_speech(prompt=query_params.prompt)
         content_type = "audio/mpeg"
 
     upload_s3_object(
         bucket_name=s3_bucket_name,
-        object_key=file_path,
+        object_key=query_params.file_path,
         file_content=file_content_bytes,
         content_type=content_type,
     )
     response.status_code = status.HTTP_201_CREATED
-    return PostFileResponse(file_path=file_path, message=f"New {file_type.value} file generated and uploaded at path: {file_path}")
+    return PostFileResponse(
+        file_path=query_params.file_path,
+        message=f"New {query_params.file_type.value} file generated and uploaded at path: {query_params.file_path}",
+    )

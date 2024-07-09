@@ -7,7 +7,10 @@ from typing import (
     Optional,
 )
 
-from fastapi import status
+from fastapi import (
+    Path,
+    status,
+)
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -184,6 +187,27 @@ class GeneratedFileType(str, Enum):
     AUDIO = "Text-to-Speech"
 
 
+class GenerateFilesQueryParams(BaseModel):
+    """Query parameters for `POST /v1/files/generated`."""
+
+    file_path: str = Path(
+        ...,
+        description="The path to the file to generate.",
+        json_schema_extra={"example": "path/to/file.txt"},
+        pattern=".*\.(txt|png|mp3)$",
+    )
+    prompt: str = Field(
+        ...,
+        description="The prompt to generate the file content.",
+        json_schema_extra={"example": "Generate a text file."},
+    )
+    file_type: GeneratedFileType = Field(
+        ...,
+        description="The type of file to generate.",
+        json_schema_extra={"example": "Text"},
+    )
+
+
 # create/update (Crud)
 class PostFileResponse(BaseModel):
     """Response model for `POST /v1/files/generated/:file_path`."""
@@ -195,4 +219,29 @@ class PostFileResponse(BaseModel):
     message: str = Field(
         description="The message indicating the status of the operation.",
         json_schema_extra={"example": "New file generated and uploaded at path: path/to/file.txt"},
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "value": {
+                        "file_path": "path/to/file.txt",
+                        "message": "New text file generated and uploaded at path: path/to/file.txt",
+                    },
+                },
+                {
+                    "value": {
+                        "file_path": "path/to/image.png",
+                        "message": "New image file generated and uploaded at path: path/to/image.png",
+                    },
+                },
+                {
+                    "value": {
+                        "file_path": "path/to/speech.mp3",
+                        "message": "New Text-to-Speech file generated and uploaded at path: path/to/speech.mp3",
+                    },
+                },
+            ]
+        }
     )
