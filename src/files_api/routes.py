@@ -1,8 +1,8 @@
 """FastAPI application for managing files in an S3 bucket."""
 
+import mimetypes
 from typing import Annotated
 
-import aiofiles
 import requests
 from fastapi import (
     APIRouter,
@@ -10,7 +10,6 @@ from fastapi import (
     File,
     HTTPException,
     Path,
-    Query,
     Request,
     Response,
     UploadFile,
@@ -325,9 +324,19 @@ async def delete_file(
 async def generate_file_using_openai(
     request: Request, response: Response, query_params: Annotated[GenerateFilesQueryParams, Depends()]
 ) -> PostFileResponse:
-    """Generate a File using AI."""
+    """
+    Generate a File using AI.
+
+    ```
+    Supported file types:
+    - Text: .txt
+    - Image: .png, .jpg, .jpeg
+    - Text-to-Speech: .mp3, .opus, .aac, .flac, .wav, .pcm
+    ```
+    """
     settings: Settings = request.app.state.settings
     s3_bucket_name = settings.s3_bucket_name
+    content_type = None
 
     if query_params.file_type == GeneratedFileType.TEXT:
         file_content = await get_text_chat_completion(prompt=query_params.prompt)
@@ -336,17 +345,19 @@ async def generate_file_using_openai(
     elif query_params.file_type == GeneratedFileType.IMAGE:
         image_url = await generate_image(prompt=query_params.prompt)
 
-        image_response = requests.get(image_url)  # Download the image from the URL
+        # Download the image from the URL
+        image_response = requests.get(image_url)  # pylint: disable=missing-timeout
         file_content_bytes = image_response.content
-        content_type = "image/png"
     else:
-        # output_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False).name
-        # await generate_text_to_speech(prompt=prompt, output_file=output_file)
-        # async with aiofiles.open(output_file, "rb") as f:
-        #     file_content_bytes = await f.read()
-        file_content_bytes = await generate_text_to_speech(prompt=query_params.prompt)
-        content_type = "audio/mpeg"
+        response_format = query_params.file_path.split(".")[-1]
+        file_content_bytes, content_type = await generate_text_to_speech(
+            prompt=query_params.prompt, response_format=response_format  # type: ignore
+        )
 
+    # If content_type is None, try to guess it from the file path
+    content_type: str | None = content_type or mimetypes.guess_type(query_params.file_path)[0]  # type: ignore
+
+    # Upload the generated file to S3
     upload_s3_object(
         bucket_name=s3_bucket_name,
         object_key=query_params.file_path,
