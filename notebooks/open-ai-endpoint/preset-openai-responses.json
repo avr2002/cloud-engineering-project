@@ -1,0 +1,67 @@
+[
+    {
+        "httpRequest": {
+            "method": "POST",
+            "path": "/chat/completions"
+        },
+        "httpResponse": {
+            "statusCode": 200,
+            "headers": {
+                "Content-Type": [
+                    "application/json"
+                ]
+            },
+            "body": {
+                "id": "chatcmpl-6lX3c8j6jNfOo0zHvX56A1E7",
+                "object": "chat.completion",
+                "created": 1677628902,
+                "model": "gpt-4-0314",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": "This is a mock response from the chat completion endpoint."
+                        },
+                        "finish_reason": "stop"
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 9,
+                    "completion_tokens": 14,
+                    "total_tokens": 23
+                }
+            }
+        }
+    },
+    {
+        "httpRequest": {
+            "method": "POST",
+            "path": "/images/generations"
+        },
+        "httpResponse": {
+            "statusCode": 200,
+            "headers": {
+                "Content-Type": [
+                    "application/json"
+                ]
+            },
+            "body": {
+                "id": "imggen-9X3c8j6jNfOo0zHvX56A1E7",
+                "object": "image.generation",
+                "created": 1677628902,
+                "model": "dall-e-2024",
+                "data": [
+                    {
+                        "url": "https://repository-images.githubusercontent.com/516708998/571919ae-d303-406d-8098-af4b2d2fb6be"
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 15,
+                    "completion_tokens": 1,
+                    "total_tokens": 16
+                }
+            }
+        }
+    }
+]
