@@ -1,5 +1,6 @@
 """FastAPI application for managing files in an S3 bucket."""
 
+import re
 from datetime import datetime
 from enum import Enum
 from typing import (
@@ -194,7 +195,7 @@ class GenerateFilesQueryParams(BaseModel):
         ...,
         description="The path to the file to generate.",
         json_schema_extra={"example": "path/to/file.txt"},
-        pattern=".*\.(txt|png|mp3)$",
+        # pattern="^.*\.(txt|png|jpg|jpeg|mp3|opus|aac|flac|wav|pcm)$",
     )
     prompt: str = Field(
         ...,
@@ -206,6 +207,21 @@ class GenerateFilesQueryParams(BaseModel):
         description="The type of file to generate.",
         json_schema_extra={"example": "Text"},
     )
+
+    @model_validator(mode="after")
+    def validate_file_path(self) -> Self:
+        """Ensure that the file path matches the file type."""
+        file_type = self.file_type.value
+        if file_type == GeneratedFileType.TEXT and not re.match(r".*\.txt$", self.file_path):
+            raise ValueError("For text files, the path must end with .txt")
+        elif file_type == GeneratedFileType.IMAGE and not re.match(r".*\.(png|jpg|jpeg)$", self.file_path):
+            raise ValueError("For image files, the path must end with .png, .jpg, or .jpeg")
+        elif file_type == GeneratedFileType.AUDIO and not re.match(
+            r".*\.(mp3|opus|aac|flac|wav|pcm)$", self.file_path
+        ):
+            raise ValueError("For audio files, the path must end with .mp3, .opus, .aac, .flac, .wav, or .pcm")
+
+        return self
 
 
 # create/update (Crud)
