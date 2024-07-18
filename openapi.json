@@ -5,7 +5,7 @@
     "summary": "Store and Retrieve Files.",
     "description": "<a href=\"https://github.com/avr2002\" target=\"_blank\">            <img src=\"https://img.shields.io/badge/Maintained%20by-Amit%20Vikram%20Raj-F4BBFF?style=for-the-badge\">        </a>\n\n| Helpful Links | Notes |\n| --- | --- |\n| [MLOps Club](https://mlops-club.org) | ![MLOps Club](https://img.shields.io/badge/Memember%20of-MLOps%20Club-05998B?style=for-the-badge) |\n| [Project Repo](https://github.com/avr2002/cloud-engineering-project) | `avr2002/cloud-engineering-project` |\n",
     "contact": {
-      "name": "Amit",
+      "name": "Amit Vikram Raj",
       "url": "https://www.linkedin.com/in/avr27/",
       "email": "avr13405@gmail.com"
     },
@@ -21,7 +21,7 @@
         "tags": [
           "Files"
         ],
-        "summary": "Upload File",
+        "summary": "Upload or Update a File",
         "description": "Upload or Update a File.",
         "operationId": "Files-upload_file",
         "parameters": [
@@ -92,7 +92,7 @@
         "tags": [
           "Files"
         ],
-        "summary": "Get File Metadata",
+        "summary": "Retrieve File Metadata",
         "description": "Retrieve File Metadata.\n\nNote: by convention, HEAD requests MUST NOT return a body in the response.",
         "operationId": "Files-get_file_metadata",
         "parameters": [
@@ -170,7 +170,7 @@
         "tags": [
           "Files"
         ],
-        "summary": "Get File",
+        "summary": "Retrieve a File",
         "description": "Retrieve a File.",
         "operationId": "Files-get_file",
         "parameters": [
@@ -247,7 +247,7 @@
         "tags": [
           "Files"
         ],
-        "summary": "Delete File",
+        "summary": "Delete a File",
         "description": "Delete a file.\n\nNOTE: DELETE requests MUST NOT return a body in the response.",
         "operationId": "Files-delete_file",
         "parameters": [
@@ -397,6 +397,86 @@
           }
         }
       }
+    },
+    "/v1/files/generated/{file_path}": {
+      "post": {
+        "tags": [
+          "Generate Files"
+        ],
+        "summary": "AI Generated Files",
+        "description": "Generate a File using AI.\n\n```\nSupported file types:\n- Text: .txt\n- Image: .png, .jpg, .jpeg\n- Text-to-Speech: .mp3, .opus, .aac, .flac, .wav, .pcm\n```",
+        "operationId": "Generate Files-generate_file_using_openai",
+        "parameters": [
+          {
+            "name": "file_path",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Path"
+            }
+          },
+          {
+            "name": "prompt",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Prompt"
+            }
+          },
+          {
+            "name": "file_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/GeneratedFileType"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PostFileResponse"
+                },
+                "examples": {
+                  "Text": {
+                    "value": {
+                      "file_path": "path/to/file.txt",
+                      "message": "New text file generated and uploaded at path: path/to/file.txt"
+                    }
+                  },
+                  "Image": {
+                    "value": {
+                      "file_path": "path/to/image.png",
+                      "message": "New image file generated and uploaded at path: path/to/image.png"
+                    }
+                  },
+                  "Text-to-Speech": {
+                    "value": {
+                      "file_path": "path/to/speech.mp3",
+                      "message": "New Text-to-Speech file generated and uploaded at path: path/to/speech.mp3"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -446,6 +526,16 @@
         ],
         "title": "FileMetadata",
         "description": "`Metadata` of a file."
+      },
+      "GeneratedFileType": {
+        "type": "string",
+        "enum": [
+          "Text",
+          "Image",
+          "Text-to-Speech"
+        ],
+        "title": "GeneratedFileType",
+        "description": "The type of file generated by OpenAI."
       },
       "GetFilesResponse": {
         "properties": {
@@ -524,6 +614,49 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "PostFileResponse": {
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "title": "File Path",
+            "description": "The path to the file.",
+            "example": "path/to/file.txt"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "description": "The message indicating the status of the operation.",
+            "example": "New file generated and uploaded at path: path/to/file.txt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_path",
+          "message"
+        ],
+        "title": "PostFileResponse",
+        "description": "Response model for `POST /v1/files/generated/:file_path`.",
+        "examples": [
+          {
+            "value": {
+              "file_path": "path/to/file.txt",
+              "message": "New text file generated and uploaded at path: path/to/file.txt"
+            }
+          },
+          {
+            "value": {
+              "file_path": "path/to/image.png",
+              "message": "New image file generated and uploaded at path: path/to/image.png"
+            }
+          },
+          {
+            "value": {
+              "file_path": "path/to/speech.mp3",
+              "message": "New Text-to-Speech file generated and uploaded at path: path/to/speech.mp3"
+            }
+          }
+        ]
       },
       "PutFileResponse": {
         "properties": {
