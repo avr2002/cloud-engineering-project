@@ -33,5 +33,3 @@
 
 - [ ] Rudimentary data validation and schema documentation (using Pydantic models). A later assignment will focus more in-depth on data validation. For now, just create basic pydantic models.
 - [ ] Implement unit tests from the perspective of a client that is unaware of the server's implementation details
-
-

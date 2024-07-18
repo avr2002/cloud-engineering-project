@@ -16,7 +16,7 @@
 - [ ] Globally catch errors and return a meaningful response to the user. [FastAPI Guide](https://fastapi.tiangolo.com/tutorial/handling-errors/#install-custom-exception-handlers)
   - [ ] Catch `pydantic.ValidationError` as `422 Unprocessable Entity`
   - [ ] Catch `Exception` as `500 Internal Server Error` (as of this writing, FastAPI does not provide a way to catch broad exceptions the same way as other types, see reference code)
-- [ ] In error messages, do not reveal implementation details to the user about what went wrong. 
+- [ ] In error messages, do not reveal implementation details to the user about what went wrong.
   - **Bad:** `"the file was not found in the S3 bucket at path <...>".` (mentions S3)
   - **Good:** `"the file requested was not found at path <...>."`
 - [ ] **(not in this section)** Include a request ID in error messages to give to "the support team" (you). Include it in logs.
@@ -45,7 +45,7 @@ Use Pydantic models wherever possible.
     class GetPeopleRequest(BaseModel):
         min_age: int = Field(..., gt=0)
         max_age: int = Field(..., lt=100) # no one makes it to 100
-        
+
         @model_validator(mode="before")
         def validate_age_range(cls, values: dict):
             if values["min_age"] > values["max_age"]:

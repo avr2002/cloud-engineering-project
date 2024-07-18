@@ -18,7 +18,7 @@ pip install --target ./lambda-env/python -r requirements.txt
 cd lambda-env
 zip -r ../lambda-layer.zip ./
 
-# Go back to the root directory, and clean up the lambda.zip file if it exists, 
+# Go back to the root directory, and clean up the lambda.zip file if it exists,
 # and create a new one with the lambda code
 cd ../src
 zip -r ../lambda.zip ./
