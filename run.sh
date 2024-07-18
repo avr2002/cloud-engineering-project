@@ -30,7 +30,7 @@ function install-generated-sdk {
 
 
 function generate-client-library {
-    # Get the current user ID and group ID to run the docker command with so that 
+    # Get the current user ID and group ID to run the docker command with so that
     # the generated SDK folder doesn't have root permissions, instead user level permission
     USER_ID=$(id -u)
     GROUP_ID=$(id -g)
@@ -58,7 +58,7 @@ function run-local {
         # Capture the environment variables names
         VARS=$(grep -v '^#' .env | cut -d= -f1)
     fi
-    
+
     uvicorn 'files_api.main:create_app' --reload
 
     # Unset the environment variables

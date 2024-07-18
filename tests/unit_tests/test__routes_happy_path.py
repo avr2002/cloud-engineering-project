@@ -107,8 +107,8 @@ def test_generate_text(client: TestClient):
     respone_data = response.json()
     assert response.status_code == status.HTTP_201_CREATED
     assert (
-        respone_data["message"] \
-            == f"New {GeneratedFileType.TEXT.value} file generated and uploaded at path: {TEST_FILE_PATH}"
+        respone_data["message"]
+        == f"New {GeneratedFileType.TEXT.value} file generated and uploaded at path: {TEST_FILE_PATH}"
     )
 
     # Get the generated file
@@ -120,7 +120,7 @@ def test_generate_text(client: TestClient):
 
 def test_generate_image(client: TestClient):
     """Test generating image using POST method."""
-    IMAGE_FILE_PATH = "some/nested/path/image.png"
+    IMAGE_FILE_PATH = "some/nested/path/image.png"  # pylint: disable=invalid-name
     response = client.post(
         url=f"/v1/files/generated/{IMAGE_FILE_PATH}",
         params={"prompt": "Test Prompt", "file_type": GeneratedFileType.IMAGE.value},
@@ -129,8 +129,8 @@ def test_generate_image(client: TestClient):
     respone_data = response.json()
     assert response.status_code == status.HTTP_201_CREATED
     assert (
-        respone_data["message"] \
-            == f"New {GeneratedFileType.IMAGE.value} file generated and uploaded at path: {IMAGE_FILE_PATH}"
+        respone_data["message"]
+        == f"New {GeneratedFileType.IMAGE.value} file generated and uploaded at path: {IMAGE_FILE_PATH}"
     )
 
     # Get the generated file

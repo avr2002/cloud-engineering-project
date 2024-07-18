@@ -40,7 +40,11 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
         | [Project Repo](https://github.com/avr2002/cloud-engineering-project) | `avr2002/cloud-engineering-project` |
         """
         ),
-        contact={"name": "Amit", "url": "https://www.linkedin.com/in/avr27/", "email": "avr13405@gmail.com"},
+        contact={
+            "name": "Amit Vikram Raj",
+            "url": "https://www.linkedin.com/in/avr27/",
+            "email": "avr13405@gmail.com",
+        },
         license_info={"name": "Apache 2.0", "identifier": "MIT"},
         docs_url="/",  # its easier to find the docs when they live on the base url
         redoc_url="/redoc",

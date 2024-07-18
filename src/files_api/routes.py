@@ -3,7 +3,7 @@
 import mimetypes
 from typing import Annotated
 
-import requests
+import requests  # type: ignore
 from fastapi import (
     APIRouter,
     Depends,
