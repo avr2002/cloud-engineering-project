@@ -9,7 +9,7 @@ authors = [{ name = "<your name>", email = "some-email@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.7"
 license = { text = "MIT" }
-dependencies = ["boto3", "fastapi", "pydantic-settings", "openai"]
+dependencies = ["boto3", "fastapi", "pydantic-settings", "openai", "requests"]
 classifiers = ["Programming Language :: Python :: 3"]
 keywords = [
     "python",
@@ -50,9 +50,7 @@ static-code-qa = [
 # - automatically apply formatting
 # - show enhanced autocompletion for stubs libraries
 # See .vscode/settings.json to see how VS Code is configured to use these tools
-dev = [
-    "cloud-engineering-project[test,release,static-code-qa,stubs,notebooks,api]",
-]
+dev = ["cloud-engineering-project[test,release,static-code-qa,stubs,notebooks,api]"]
 
 [build-system]
 # Minimum requirements for the build system to execute.
