@@ -50,17 +50,17 @@ Use OpenAPI to document your API. Include:
           """Response model for `PUT /files/:filePath`."""
           success: bool
           message: str
-      
+
           model_config = ConfigDict(
             json_schema_extra={"examples": [
-              {"success": True, 
+              {"success": True,
               "message": "File uploaded successfully"}]
             }
           )
       ```
 
 - **Schemas** (pydantic models in request/response)
-  - [ ] Decide if you will use `snake_case` or `camelCase` in JSON request/response payloads. 
+  - [ ] Decide if you will use `snake_case` or `camelCase` in JSON request/response payloads.
     - Be consistent and stick to one
     - Useful: `pydantic.alias_generators.to_camel` in `model_config`, [Pydantic guide](https://docs.pydantic.dev/latest/api/config/#pydantic.config.ConfigDict.loc_by_alias)
   - [ ] Include a docstring in each Pydantic Model
@@ -68,7 +68,7 @@ Use OpenAPI to document your API. Include:
     class PutFileResponse(BaseModel):
         """Response model for `PUT /files/:filePath`."""
     ```
-  - [ ] Include a description for each field 
+  - [ ] Include a description for each field
     ```python
     Field(..., description="...")
     ```

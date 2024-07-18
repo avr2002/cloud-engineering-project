@@ -1,5 +1,9 @@
 # See https://pre-commit.com for more information
 # See https://pre-commit.com/hooks.html for more hooks
+
+# Don't run pre-commit on notebooks folder
+exclude: ^notebooks
+
 repos:
   - repo: local
     hooks:

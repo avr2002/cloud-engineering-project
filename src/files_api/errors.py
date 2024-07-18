@@ -18,7 +18,7 @@ async def handle_broad_exceptions(request: Request, call_next):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "message": "An unexpected error occurred.",
-                "error_type": "500 Internal Server Error",
+                "error_type": "Internal Server Error",
             },
         )
 

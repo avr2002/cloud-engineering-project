@@ -1,7 +1,9 @@
 """FastAPI application for managing files in an S3 bucket."""
 
+import mimetypes
 from typing import Annotated
 
+import requests  # type: ignore
 from fastapi import (
     APIRouter,
     Depends,
@@ -15,6 +17,11 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 
+from files_api.generate import (
+    generate_image,
+    generate_text_to_speech,
+    get_text_chat_completion,
+)
 from files_api.s3.delete_objects import delete_s3_object
 from files_api.s3.read_objects import (
     fetch_s3_object,
@@ -25,18 +32,23 @@ from files_api.s3.read_objects import (
 from files_api.s3.write_objects import upload_s3_object
 from files_api.schemas import (
     FileMetadata,
+    GeneratedFileType,
+    GenerateFilesQueryParams,
     GetFilesQueryParams,
     GetFilesResponse,
+    PostFileResponse,
     PutFileResponse,
 )
 from files_api.settings import Settings
 
-ROUTER = APIRouter(tags=["Files"])
+ROUTER = APIRouter()
 
 
 @ROUTER.put(
     "/v1/files/{file_path:path}",
     status_code=status.HTTP_201_CREATED,
+    tags=["Files"],
+    summary="Upload or Update a File",
     responses={
         status.HTTP_201_CREATED: {
             "model": PutFileResponse,
@@ -79,6 +91,8 @@ async def upload_file(
 
 @ROUTER.get(
     "/v1/files",
+    tags=["Files"],
+    summary="List Files",
     responses={
         status.HTTP_200_OK: {
             "model": GetFilesResponse,
@@ -130,6 +144,8 @@ async def list_files(
 
 @ROUTER.head(
     "/v1/files/{file_path:path}",
+    tags=["Files"],
+    summary="Retrieve File Metadata",
     responses={
         status.HTTP_404_NOT_FOUND: {
             "description": "File not found for the given `file_path`.",
@@ -189,6 +205,8 @@ async def get_file_metadata(file_path: str, request: Request, response: Response
 
 @ROUTER.get(
     "/v1/files/{file_path:path}",
+    tags=["Files"],
+    summary="Retrieve a File",
     responses={
         status.HTTP_404_NOT_FOUND: {
             "description": "File not found for the given `file_path`.",
@@ -238,6 +256,11 @@ async def get_file(
     get_object_response = fetch_s3_object(bucket_name=s3_bucket_name, object_key=file_path)
     response.headers["Content-Type"] = get_object_response["ContentType"]
     response.headers["Content-Length"] = str(get_object_response["ContentLength"])
+    # If the file is a PDF, set the Content-Disposition header to force download
+    if response.headers["Content-Type"] == "application/pdf":
+        response.headers["Content-Disposition"] = f'attachment; filename="{file_path}"'
+        # response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
+
     response.status_code = status.HTTP_200_OK
     return StreamingResponse(
         content=get_object_response["Body"],
@@ -248,6 +271,8 @@ async def get_file(
 
 @ROUTER.delete(
     "/v1/files/{file_path:path}",
+    tags=["Files"],
+    summary="Delete a File",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_204_NO_CONTENT: {"description": "File deleted successfully."},
@@ -275,23 +300,72 @@ async def delete_file(
     return response
 
 
-# @ROUTER.put("/v1/files/openai/{file_path:path}")
-# async def upload_file_from_openai(
-#     request: Request,
-#     file_path: Annotated[str, Path(description="The path to the file.")],
-# ) -> PutFileResponse:
-#     """Upload a File from OpenAI."""
-#     settings: Settings = request.app.state.settings
-#     s3_bucket_name = settings.s3_bucket_name
+@ROUTER.post(
+    "/v1/files/generated/{file_path:path}",
+    status_code=status.HTTP_201_CREATED,
+    tags=["Generate Files"],
+    summary="AI Generated Files",
+    responses={
+        status.HTTP_201_CREATED: {
+            "model": PostFileResponse,
+            "description": "Successful Response",
+            "content": {
+                "application/json": {
+                    "examples": {
+                        GeneratedFileType.TEXT: PostFileResponse.model_json_schema()["examples"][0],
+                        GeneratedFileType.IMAGE: PostFileResponse.model_json_schema()["examples"][1],
+                        GeneratedFileType.AUDIO: PostFileResponse.model_json_schema()["examples"][2],
+                    },
+                },
+            },
+        },
+    },
+)
+async def generate_file_using_openai(
+    request: Request, response: Response, query_params: Annotated[GenerateFilesQueryParams, Depends()]
+) -> PostFileResponse:
+    """
+    Generate a File using AI.
 
-#     # generate ai content using openai
-#     file_content = generate_ai_content()
+    ```
+    Supported file types:
+    - Text: .txt
+    - Image: .png, .jpg, .jpeg
+    - Text-to-Speech: .mp3, .opus, .aac, .flac, .wav, .pcm
+    ```
+    """
+    settings: Settings = request.app.state.settings
+    s3_bucket_name = settings.s3_bucket_name
+    content_type = None
 
+    if query_params.file_type == GeneratedFileType.TEXT:
+        file_content = await get_text_chat_completion(prompt=query_params.prompt)
+        file_content_bytes: bytes = file_content.encode("utf-8")  # convert string to bytes
+        content_type = "text/plain"
+    elif query_params.file_type == GeneratedFileType.IMAGE:
+        image_url = await generate_image(prompt=query_params.prompt)
 
-#     upload_s3_object(
-#         bucket_name=s3_bucket_name,
-#         object_key=file_path,
-#         file_content=file_bytes,
-#         content_type=file_content.content_type,
-#     )
-#     return PutFileResponse(file_path=file_path, message=f"New file uploaded at path: {file_path}")
+        # Download the image from the URL
+        image_response = requests.get(image_url)  # pylint: disable=missing-timeout
+        file_content_bytes = image_response.content
+    else:
+        response_format = query_params.file_path.split(".")[-1]
+        file_content_bytes, content_type = await generate_text_to_speech(
+            prompt=query_params.prompt, response_format=response_format  # type: ignore
+        )
+
+    # If content_type is None, try to guess it from the file path
+    content_type: str | None = content_type or mimetypes.guess_type(query_params.file_path)[0]  # type: ignore
+
+    # Upload the generated file to S3
+    upload_s3_object(
+        bucket_name=s3_bucket_name,
+        object_key=query_params.file_path,
+        file_content=file_content_bytes,
+        content_type=content_type,
+    )
+    response.status_code = status.HTTP_201_CREATED
+    return PostFileResponse(
+        file_path=query_params.file_path,
+        message=f"New {query_params.file_type.value} file generated and uploaded at path: {query_params.file_path}",
+    )

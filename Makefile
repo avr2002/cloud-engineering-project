@@ -19,6 +19,9 @@ run:
 run-mock:
 	bash run.sh run-mock
 
+run-local:
+	bash run.sh run-local
+
 clean:
 	bash run.sh clean
 
