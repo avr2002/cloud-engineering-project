@@ -48,6 +48,7 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
         license_info={"name": "Apache 2.0", "identifier": "MIT"},
         docs_url="/",  # its easier to find the docs when they live on the base url
         redoc_url="/redoc",
+        root_path="/prod",  # adding stage name to the root path
         generate_unique_id_function=custom_generate_unique_id,
     )
     # app.state.s3_bucket_name = s3_bucket_name

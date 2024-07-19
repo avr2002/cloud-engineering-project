@@ -7,6 +7,9 @@
 build:
 	bash run.sh build
 
+deploy-lambda: clean
+	bash run.sh deploy-lambda
+
 install-generated-sdk:
 	bash run.sh install-generated-sdk
 
