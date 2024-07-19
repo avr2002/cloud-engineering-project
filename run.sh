@@ -28,7 +28,7 @@ function install {
 # The function package consists of
 # - deployment package: contents of the src/ folder
 # - layer package: installed dependencies
-# 
+#
 # Note, this function assumes that
 # - a lambda function named $AWS_LAMBDA_FUNCTION_NAME already exists
 # - docker 🐳 is required to run this function
@@ -60,7 +60,7 @@ function deploy-lambda:cd {
 	docker pull public.ecr.aws/lambda/python:3.12-arm64
 
 	# install dependencies in a docker container to ensure compatibility with AWS Lambda
-	# 
+	#
 	# Note: we remote boto3 and botocore because AWS lambda automatically
 	# provides these. This saves us ~24MB in the final, uncompressed layer size.
 	docker run --rm \
