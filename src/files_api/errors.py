@@ -1,5 +1,7 @@
 """Custom error handlers for the Fast API application."""
 
+import traceback
+
 import pydantic
 from fastapi import (
     Request,
@@ -14,11 +16,12 @@ async def handle_broad_exceptions(request: Request, call_next):
     try:
         return await call_next(request)
     except Exception:  # pylint: disable=broad-except
+        traceback.print_exc()
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "message": "An unexpected error occurred.",
-                "error_type": "Internal Server Error",
+                "detail": "Internal Server Error",
             },
         )
 
