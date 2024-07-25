@@ -109,6 +109,35 @@ function deploy-lambda:cd {
 		--output json | cat
 }
 
+
+function deploy-lambda:code {
+	# Function to deploy the application code to the lambda function
+	export AWS_PROFILE=cloud-course
+	export AWS_REGION=ap-south-1
+
+	LAMBDA_HANDLER_ZIP_FPATH="${BUILD_DIR}/lambda.zip"
+	SRC_DIR="${THIS_DIR}/src"
+
+	# create the build directory if it doesn't exist
+	[ ! -d "$BUILD_DIR" ] && mkdir -p "$BUILD_DIR"
+
+	# clean up artifacts
+	rm -f "$LAMBDA_HANDLER_ZIP_FPATH" || true
+
+	# bundle handler code in a zip file
+	cd "$SRC_DIR"
+	zip -r "$LAMBDA_HANDLER_ZIP_FPATH" ./
+
+	cd "$THIS_DIR"
+
+	# publish the lambda "deployment package" (the handler)
+	aws lambda update-function-code \
+		--function-name "$AWS_LAMBDA_FUNCTION_NAME" \
+		--zip-file fileb://${LAMBDA_HANDLER_ZIP_FPATH} \
+		--output json | cat
+}
+
+
 function install-generated-sdk {
 	# install the generated SDK in newly created venv
 	python -m pip install --upgrade pip
@@ -172,6 +201,10 @@ function run-mock {
 	# point the OpenAI API to the mocked OpenAI server using mocked credentials
 	export OPENAI_BASE_URL="http://localhost:1080"
 	export OPENAI_API_KEY="mocked_key"
+
+	# Set Service and Metric Namespace for aws_lambda_powertools
+	export POWERTOOLS_SERVICE_NAME="FilesAPIService"
+	export POWERTOOLS_METRICS_NAMESPACE="FilesAPINamespace"
 
 	# create a bucket called "some-bucket" using the mocked aws server
 	aws s3 mb "s3://$S3_BUCKET_NAME"

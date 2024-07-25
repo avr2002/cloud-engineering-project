@@ -10,6 +10,9 @@ build:
 deploy-lambda: clean
 	bash run.sh deploy-lambda
 
+deploy-lambda-code: clean
+	bash run.sh deploy-lambda:code
+
 install-generated-sdk:
 	bash run.sh install-generated-sdk
 
