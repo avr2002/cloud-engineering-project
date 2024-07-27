@@ -107,6 +107,9 @@ function deploy-lambda:cd {
 		--layers $LAYER_VERSION_ARN \
 		--handler "files_api.aws_lambda_handler.handler" \
 		--output json | cat
+	
+	# update FilesAPIDashboard with the new version annotation
+	update-dashboard
 }
 
 
@@ -135,7 +138,24 @@ function deploy-lambda:code {
 		--function-name "$AWS_LAMBDA_FUNCTION_NAME" \
 		--zip-file fileb://${LAMBDA_HANDLER_ZIP_FPATH} \
 		--output json | cat
+	
+	# update FilesAPIDashboard with the new version annotation
+	update-dashboard
 }
+
+
+function update-dashboard {
+	VERSION_TXT_PATH=$THIS_DIR/version.txt
+	DASHBOARD_NAME="FilesAPIDashboard"
+
+	# Function to update the CloudWatch dashboard
+	python3 "$THIS_DIR/scripts/update_dashboard.py" \
+		--dashboard-name "$DASHBOARD_NAME" \
+		--version-txt-path "$VERSION_TXT_PATH"
+	
+	echo "Dashboard updated successfully with version $(cat $VERSION_TXT_PATH)"
+}
+
 
 
 function install-generated-sdk {

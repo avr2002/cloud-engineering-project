@@ -7,6 +7,9 @@
 build:
 	bash run.sh build
 
+update-dashboard:
+	bash run.sh update-dashboard
+
 deploy-lambda: clean
 	bash run.sh deploy-lambda
 
