@@ -4,15 +4,21 @@ from textwrap import dedent
 from typing import Union
 
 import pydantic
-from fastapi import FastAPI
+from fastapi import (
+    FastAPI,
+    HTTPException,
+)
 from fastapi.routing import APIRoute
+from starlette.middleware.exceptions import ExceptionMiddleware
 
 from files_api.errors import (
     handle_broad_exceptions,
+    # handle_http_exception,
     handle_pydantic_validation_error,
 )
 from files_api.routes import ROUTER
 from files_api.settings import Settings
+from files_api.utils import add_correlation_id
 
 
 def custom_generate_unique_id(route: APIRoute):
@@ -59,6 +65,7 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
         handler=handle_pydantic_validation_error,
     )
     app.middleware("http")(handle_broad_exceptions)
+    app.middleware("http")(add_correlation_id)
     return app
 
 

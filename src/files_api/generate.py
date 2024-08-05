@@ -6,8 +6,11 @@ from typing import (
     Union,
 )
 
+from aws_lambda_powertools.metrics import MetricUnit
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
+
+from files_api.utils import metrics, logger
 
 SYSTEM_PROMPT = "You are an autocompletion tool that produces text files given constraints."
 
@@ -37,7 +40,8 @@ async def get_text_chat_completion(prompt: str, openai_client: Optional[AsyncOpe
         max_tokens=100,  # avoid burning your credits
         n=1,  # number of responses
     )
-
+    
+    metrics.add_metric(name="OpenAITokensUsage", unit=MetricUnit.Count, value=response.usage.total_tokens)
     return response.choices[0].message.content or ""
 
 

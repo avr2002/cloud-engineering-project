@@ -40,8 +40,13 @@ from files_api.schemas import (
     PutFileResponse,
 )
 from files_api.settings import Settings
+from files_api.utils import (
+    LoggerRouteHandler,
+    logger,
+)
 
 ROUTER = APIRouter()
+ROUTER.route_class = LoggerRouteHandler
 
 
 @ROUTER.put(
@@ -74,9 +79,13 @@ async def upload_file(
     object_already_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=file_path)
     if object_already_exists:
         response_message = f"Existing file updated at path: {file_path}"
+
+        logger.info(f"File updated successfully: {file_path}")
         response.status_code = status.HTTP_200_OK
     else:
         response_message = f"New file uploaded at path: {file_path}"
+
+        logger.info(f"File uploaded successfully: {file_path}")
         response.status_code = status.HTTP_201_CREATED
 
     file_bytes: bytes = await file_content.read()
@@ -135,6 +144,8 @@ async def list_files(
         )
         for file in files
     ]
+
+    logger.info(f"Files retrieved successfully: {len(files_metadata)} files")
     response.status_code = status.HTTP_200_OK
     return GetFilesResponse(
         files=files_metadata,
@@ -189,12 +200,15 @@ async def get_file_metadata(file_path: str, request: Request, response: Response
     s3_bucket_name = settings.s3_bucket_name
     object_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=file_path)
     if not object_exists:
+        logger.error(f"File not found: {file_path}")
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             headers={"X-Error": f"File not found: {file_path}"},
         )
 
     get_object_response = fetch_s3_object(bucket_name=s3_bucket_name, object_key=file_path)
+
+    logger.info(f"File metadata retrieved successfully: {file_path}")
     response.headers["Content-Type"] = get_object_response["ContentType"]
     response.headers["Content-Length"] = str(get_object_response["ContentLength"])
     response.headers["Last-Modified"] = get_object_response["LastModified"].strftime("%a, %d %b %Y %H:%M:%S GMT")
@@ -251,6 +265,7 @@ async def get_file(
     s3_bucket_name = settings.s3_bucket_name
     object_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=file_path)
     if not object_exists:
+        logger.error(f"File not found: {file_path}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"File not found: {file_path}")
 
     get_object_response = fetch_s3_object(bucket_name=s3_bucket_name, object_key=file_path)
@@ -258,10 +273,13 @@ async def get_file(
     response.headers["Content-Length"] = str(get_object_response["ContentLength"])
     # If the file is a PDF, set the Content-Disposition header to force download
     if response.headers["Content-Type"] == "application/pdf":
+        logger.info("Setting Content-Disposition header to force download for PDF file.")
         response.headers["Content-Disposition"] = f'attachment; filename="{file_path}"'
         # response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
 
     response.status_code = status.HTTP_200_OK
+
+    logger.info(f"File retrieved successfully: {file_path}")
     return StreamingResponse(
         content=get_object_response["Body"],
         media_type=get_object_response["ContentType"],
@@ -291,11 +309,13 @@ async def delete_file(
     s3_bucket_name = settings.s3_bucket_name
     object_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=file_path)
     if not object_exists:
+        logger.error(f"Cannot delete file, file not found: {file_path}")
         response.status_code = status.HTTP_404_NOT_FOUND
         response.headers["X-Error"] = f"File not found: {file_path}"
         return response
 
     delete_s3_object(bucket_name=s3_bucket_name, object_key=file_path)
+    logger.info(f"File deleted successfully at {file_path}")
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
@@ -342,20 +362,25 @@ async def generate_file_using_openai(
         file_content = await get_text_chat_completion(prompt=query_params.prompt)
         file_content_bytes: bytes = file_content.encode("utf-8")  # convert string to bytes
         content_type = "text/plain"
+
+        logger.info("Text file generated successfully")
     elif query_params.file_type == GeneratedFileType.IMAGE:
         image_url = await generate_image(prompt=query_params.prompt)
-
         # Download the image from the URL
         image_response = requests.get(image_url)  # pylint: disable=missing-timeout
         file_content_bytes = image_response.content
+
+        logger.info(f"Image file generated successfully: {image_url}")
     else:
         response_format = query_params.file_path.split(".")[-1]
         file_content_bytes, content_type = await generate_text_to_speech(
             prompt=query_params.prompt, response_format=response_format  # type: ignore
         )
+        logger.info("Text-to-Speech file generated successfully")
 
     # If content_type is None, try to guess it from the file path
     content_type: str | None = content_type or mimetypes.guess_type(query_params.file_path)[0]  # type: ignore
+    logger.info(f"Content-Type for the generated file: {content_type}")
 
     # Upload the generated file to S3
     upload_s3_object(
@@ -364,6 +389,8 @@ async def generate_file_using_openai(
         file_content=file_content_bytes,
         content_type=content_type,
     )
+
+    logger.info(f"Generated file uploaded successfully at path: {query_params.file_path}")
     response.status_code = status.HTTP_201_CREATED
     return PostFileResponse(
         file_path=query_params.file_path,
