@@ -1,40 +1,66 @@
+import os
 from typing import Callable
 
-from aws_lambda_powertools import (
-    Logger,
-    Metrics,
-    Tracer,
-)
 from fastapi import (
     Request,
     Response,
 )
 from fastapi.routing import APIRoute
 
-logger: Logger = Logger()
-metrics: Metrics = Metrics()
-tracer: Tracer = Tracer()
+from files_api.logger_config import logger
+import threading
+
+# Use thread-local storage to handle cold start per thread
+_thread_local = threading.local()
+_thread_local.cold_start = True
+
+# # Global variable to track cold starts
+# cold_start = True
 
 
-async def add_correlation_id(request: Request, call_next):
-    """Middleware to add correlation ID to logs and response headers."""
-    # Get the correlation ID from the incoming request headers
-    correlation_id = request.headers.get("X-Correlation-ID", None)
-    if not correlation_id:
-        # If empty, use request ID from AWS Context
-        # .get() method cannot be used with `request.scope`, thus using try-except to add a default value for local development
-        try:
+async def inject_lambda_context(request: Request, call_next):
+    """Middleware to add Lambda context to FastAPI request scope."""
+    # global cold_start  # Declare that we're using the global variable
+    # Capture cold start status from thread-local storage
+    cold_start = _thread_local.cold_start
+
+    try:
+        # Get the Lambda context from the incoming request headers
+        context = request.scope["aws.context"]
+        # https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html
+        lambda_context = {
+            "cold_start": cold_start,
+            "function_name": os.environ["AWS_LAMBDA_FUNCTION_NAME"],  # context.function_name,
+            "function_memory_size": os.environ["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"],  # context.memory_limit_in_mb,
+            "function_arn": context.invoked_function_arn,
+            "function_request_id": context.aws_request_id,
+            "xray_trace_id": os.environ["_X_AMZN_TRACE_ID"].split(";")[0].strip("Root="),
+        }
+
+        # Get the correlation ID from the incoming request headers
+        correlation_id = request.headers.get("X-Correlation-ID", None)
+        if not correlation_id:
+            # If empty, use request ID from AWS Context
             correlation_id = request.scope["aws.context"].aws_request_id
-        except KeyError:
-            correlation_id = "local-development"
+    except KeyError:
+        lambda_context = {
+            "cold_start": cold_start,
+            "function_arn": "local-development",
+            "function_memory_size": "local-development",
+            "function_name": "local-development",
+            "function_request_id": "local-development",
+        }
+        correlation_id = "local-development"
 
-    # Add correlation ID to logs
-    logger.set_correlation_id(correlation_id)
+    with logger.contextualize(correlation_id=correlation_id, **lambda_context):
+        response = await call_next(request)
 
-    response = await call_next(request)
+    # # After handling the request, set cold_start to False for subsequent invocations
+    # cold_start = False
+    
+     # Set cold_start to False for subsequent requests
+    _thread_local.cold_start = False
 
-    # Return correlation ID in response headers
-    response.headers["X-Correlation-ID"] = correlation_id
     return response
 
 
@@ -51,9 +77,7 @@ class LoggerRouteHandler(APIRoute):
                 "route": self.path,
                 "method": request.method,
             }
-            logger.append_keys(fastapi=context)
-            logger.info("Request Received.")
-
-            return await original_route_handler(request)
+            with logger.contextualize(fastapi=context):
+                return await original_route_handler(request)
 
         return route_handler

@@ -5,7 +5,7 @@
 [project]
 name = "cloud-engineering-project"
 description = "My package description"
-authors = [{ name = "<your name>", email = "some-email@gmail.com" }]
+authors = [{ name = "Amit Vikram Raj", email = "avr13405@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.7"
 license = { text = "MIT" }
@@ -15,7 +15,9 @@ dependencies = [
     "pydantic-settings",
     "openai",
     "requests",
-    "aws-lambda-powertools[aws-xray-sdk]",
+    "loguru",
+    "python-multipart",
+    # "aws-lambda-powertools[aws-xray-sdk]",
 ]
 classifiers = ["Programming Language :: Python :: 3"]
 keywords = [

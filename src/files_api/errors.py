@@ -1,6 +1,6 @@
 """Custom error handlers for the Fast API application."""
 
-import traceback
+# import traceback
 
 import pydantic
 from fastapi import (
@@ -9,7 +9,7 @@ from fastapi import (
 )
 from fastapi.responses import JSONResponse
 
-from files_api.utils import logger
+from files_api.logger_config import logger
 
 
 # Fast API Docs on Middleware: https://fastapi.tiangolo.com/tutorial/middleware/

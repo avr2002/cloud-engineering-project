@@ -222,9 +222,12 @@ function run-mock {
 	export OPENAI_BASE_URL="http://localhost:1080"
 	export OPENAI_API_KEY="mocked_key"
 
+	# Export Log Level
+	export LOG_LEVEL="INFO"
+
 	# Set Service and Metric Namespace for aws_lambda_powertools
-	export POWERTOOLS_SERVICE_NAME="FilesAPIService"
-	export POWERTOOLS_METRICS_NAMESPACE="FilesAPINamespace"
+	# export POWERTOOLS_SERVICE_NAME="FilesAPIService"
+	# export POWERTOOLS_METRICS_NAMESPACE="FilesAPINamespace"
 
 	# create a bucket called "some-bucket" using the mocked aws server
 	aws s3 mb "s3://$S3_BUCKET_NAME"
