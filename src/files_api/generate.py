@@ -6,12 +6,15 @@ from typing import (
     Union,
 )
 
+from aws_embedded_metrics import (
+    MetricsLogger,
+    metric_scope,
+)
+from aws_embedded_metrics.storage_resolution import StorageResolution
+
 # from aws_lambda_powertools.metrics import MetricUnit
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
-
-# from files_api.utils import metrics, logger
-# from files_api.logger_config import logger
 
 SYSTEM_PROMPT = "You are an autocompletion tool that produces text files given constraints."
 
@@ -26,7 +29,10 @@ def get_openai_client() -> AsyncOpenAI:
     return client
 
 
-async def get_text_chat_completion(prompt: str, openai_client: Optional[AsyncOpenAI] = None) -> str:
+@metric_scope
+async def get_text_chat_completion(
+    prompt: str, metrics: MetricsLogger, openai_client: Optional[AsyncOpenAI] = None
+) -> str:
     """Generate a text chat completion from a given prompt."""
     # get the OpenAI client
     client = openai_client or get_openai_client()
@@ -41,8 +47,13 @@ async def get_text_chat_completion(prompt: str, openai_client: Optional[AsyncOpe
         max_tokens=100,  # avoid burning your credits
         n=1,  # number of responses
     )
-    
-    # metrics.add_metric(name="OpenAITokensUsage", unit=MetricUnit.Count, value=response.usage.total_tokens)
+
+    metrics.put_metric(
+        key="OpenAITokensUsage",
+        value=response.usage.total_tokens,
+        unit="Count",
+        storage_resolution=StorageResolution.STANDARD,
+    )
     return response.choices[0].message.content or ""
 
 

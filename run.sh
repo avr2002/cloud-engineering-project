@@ -206,14 +206,21 @@ function run-local {
 
 # start the FastAPI app, pointed at a mocked aws endpoint
 function run-mock {
-	set +e
+	set -e
+
+	# Check if Docker is running
+	if ! docker info >/dev/null 2>&1; then
+		echo "Docker is not running. Please start Docker Desktop and try again."
+		exit 1
+	fi
 
 	# Start moto.server in the background on localhost:5000
-	python -m moto.server -p 5000 &
+	MOTO_PORT=5000
+	python -m moto.server -p $MOTO_PORT &
 	MOTO_PID=$!
 
 	# point the AWS CLI and boto3 to the mocked AWS server using mocked credentials
-	export AWS_ENDPOINT_URL="http://localhost:5000"
+	export AWS_ENDPOINT_URL="http://localhost:$MOTO_PORT"
 	export AWS_SECRET_ACCESS_KEY="mock"
 	export AWS_ACCESS_KEY_ID="mock"
 	export S3_BUCKET_NAME="some-bucket"
@@ -223,7 +230,15 @@ function run-mock {
 	export OPENAI_API_KEY="mocked_key"
 
 	# Export Log Level
-	export LOG_LEVEL="INFO"
+	export LOGURU_LEVEL="DEBUG"
+
+	# Setup environment variables for aws-embedded-metrics
+	export AWS_EMF_SERVICE_NAME="FilesAPIService"
+	export AWS_EMF_NAMESPACE="FilesAPINamespace"
+	# export AWS_EMF_LOG_GROUP_NAME="FilesAPIServiceLogGroup"
+	# export AWS_EMF_LOG_STREAM_NAME="FilesAPIServiceLogStream"
+	# export AWS_EMF_SERVICE_TYPE="API"
+	export AWS_EMF_ENVIRONMENT="local"
 
 	# Set Service and Metric Namespace for aws_lambda_powertools
 	# export POWERTOOLS_SERVICE_NAME="FilesAPIService"
@@ -236,7 +251,7 @@ function run-mock {
 	docker compose --file ./mock-openai-docker-compose.yaml up --detach
 
 	# Trap EXIT signal to kill the moto.server process when uvicorn stops
-	trap 'kill $MOTO_PID; docker compose --file ./mock-openai-docker-compose.yaml down' EXIT
+	trap "kill $MOTO_PID; docker compose --file ./mock-openai-docker-compose.yaml down" EXIT
 
 	# Set AWS endpoint URL and start FastAPI app with uvicorn in the foreground
 	uvicorn src.files_api.main:create_app --reload

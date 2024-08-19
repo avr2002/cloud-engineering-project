@@ -17,6 +17,7 @@ dependencies = [
     "requests",
     "loguru",
     "python-multipart",
+    "aws-embedded-metrics",
     # "aws-lambda-powertools[aws-xray-sdk]",
 ]
 classifiers = ["Programming Language :: Python :: 3"]
@@ -41,7 +42,7 @@ version = { file = "version.txt" }
 [project.optional-dependencies]
 aws-lambda = ["mangum"]
 api = ["uvicorn", "moto[server]"]
-stubs = ["boto3-stubs[s3]"]
+stubs = ["boto3-stubs[s3, cloudwatch, logs]"]
 notebooks = ["jupyter", "ipykernel", "rich"]
 test = ["pytest", "pytest-cov", "moto[s3]"]
 release = ["build", "twine"]

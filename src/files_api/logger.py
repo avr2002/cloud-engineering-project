@@ -1,28 +1,51 @@
+from __future__ import annotations
+
+import json
 import os
-from typing import Callable
+import sys
 
-from fastapi import (
-    Request,
-    Response,
-)
-from fastapi.routing import APIRoute
+import loguru
+from fastapi import Request
+from loguru import logger
 
-from files_api.logger_config import logger
 
-# Global variable to track cold starts
-cold_start = True
+def serialize_extra_keys(record: loguru.Record) -> loguru.Record:
+    extra = record["extra"]
+    level = record["level"].name
+    if extra:
+        extra["level"] = level
+        record["extra"] = json.dumps(extra)
+    return record
+
+
+def configure_logger() -> loguru.Logger:
+    """Configure the logger for the FastAPI application."""
+    logging_config = {
+        "handlers": [
+            {
+                "sink": sys.stdout,
+                "format": "{file}:{line}:{function} | {message} | {extra}",
+                "filter": serialize_extra_keys,
+                "diagnose": False,
+                "backtrace": False,
+            },
+        ],
+    }
+
+    # Remove the default logger config and add custom configurations
+    logger.remove()
+    logger.configure(**logging_config)
+    return logger
 
 
 async def inject_lambda_context(request: Request, call_next):
     """Middleware to add Lambda context to FastAPI request scope."""
-    global cold_start  # Declare that we're using the global variable
 
     try:
         # Get the Lambda context from the incoming request headers
         context = request.scope["aws.context"]
         # https://docs.aws.amazon.com/lambda/latest/dg/configuration-envvars.html
         lambda_context = {
-            "cold_start": cold_start,
             "function_name": os.environ["AWS_LAMBDA_FUNCTION_NAME"],  # context.function_name,
             "function_memory_size": os.environ["AWS_LAMBDA_FUNCTION_MEMORY_SIZE"],  # context.memory_limit_in_mb,
             "function_arn": context.invoked_function_arn,
@@ -31,7 +54,6 @@ async def inject_lambda_context(request: Request, call_next):
         }
     except KeyError:
         lambda_context = {
-            "cold_start": cold_start,
             "function_arn": "local-development",
             "function_memory_size": "local-development",
             "function_name": "local-development",
@@ -41,26 +63,5 @@ async def inject_lambda_context(request: Request, call_next):
     with logger.contextualize(**lambda_context):
         response = await call_next(request)
 
-    # After handling the request, set cold_start to False for subsequent invocations
-    cold_start = False
-
     return response
 
-
-class LoggerRouteHandler(APIRoute):
-    """Custom router to add FastAPI context to logs."""
-
-    def get_route_handler(self) -> Callable:
-        original_route_handler = super().get_route_handler()
-
-        async def route_handler(request: Request) -> Response:
-            # Add fastapi context to logs
-            context = {
-                "path": request.url.path,
-                "route": self.path,
-                "method": request.method,
-            }
-            with logger.contextualize(fastapi=context):
-                return await original_route_handler(request)
-
-        return route_handler

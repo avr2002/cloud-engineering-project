@@ -13,7 +13,7 @@ from files_api.errors import (
 )
 from files_api.routes import ROUTER
 from files_api.settings import Settings
-from files_api.utils import inject_lambda_context  # add_correlation_id,; add_fastapi_context,
+from files_api.logger import inject_lambda_context, configure_logger
 
 
 def custom_generate_unique_id(route: APIRoute):
@@ -24,6 +24,7 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
     """Create a FastAPI application."""
     # s3_bucket_name = s3_bucket_name or os.environ["S3_BUCKET_NAME"]
     settings = settings or Settings()
+    configure_logger()
 
     app = FastAPI(
         title="Files API",
@@ -53,6 +54,7 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
         generate_unique_id_function=custom_generate_unique_id,
     )
     # app.state.s3_bucket_name = s3_bucket_name
+    
     app.state.settings = settings
     app.include_router(ROUTER)
     app.add_exception_handler(

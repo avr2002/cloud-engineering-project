@@ -17,12 +17,13 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 
+# from files_api.logger_config import logger
+from loguru import logger
 from files_api.generate import (
     generate_image,
     generate_text_to_speech,
     get_text_chat_completion,
 )
-from files_api.logger_config import logger
 from files_api.s3.delete_objects import delete_s3_object
 from files_api.s3.read_objects import (
     fetch_s3_object,
@@ -41,10 +42,11 @@ from files_api.schemas import (
     PutFileResponse,
 )
 from files_api.settings import Settings
-from files_api.utils import LoggerRouteHandler
+from files_api.route_handler import RouteHandler
+from aws_embedded_metrics import metric_scope, MetricsLogger
 
 ROUTER = APIRouter()
-ROUTER.route_class = LoggerRouteHandler
+ROUTER.route_class = RouteHandler
 
 
 @ROUTER.put(
@@ -79,13 +81,13 @@ async def upload_file(
         response_message = f"Existing file updated at path: {file_path}"
 
         # logger.info(f"File updated successfully: {file_path}")
-        logger.success(f"File updated successfully: {file_path}")
+        logger.info(f"File updated successfully: {file_path}")
         response.status_code = status.HTTP_200_OK
     else:
         response_message = f"New file uploaded at path: {file_path}"
 
         # logger.info(f"File uploaded successfully: {file_path}")
-        logger.success(f"File uploaded successfully: {file_path}")
+        logger.info(f"File uploaded successfully: {file_path}")
         response.status_code = status.HTTP_201_CREATED
 
     file_bytes: bytes = await file_content.read()
@@ -146,7 +148,7 @@ async def list_files(
     ]
 
     # logger.info(f"Files retrieved successfully: {len(files_metadata)} files")
-    logger.success(f"Files retrieved successfully: {len(files_metadata)} files")
+    logger.info(f"Files retrieved successfully: {len(files_metadata)} files")
     response.status_code = status.HTTP_200_OK
     return GetFilesResponse(
         files=files_metadata,
@@ -209,8 +211,7 @@ async def get_file_metadata(file_path: str, request: Request, response: Response
 
     get_object_response = fetch_s3_object(bucket_name=s3_bucket_name, object_key=file_path)
 
-    # logger.info(f"File metadata retrieved successfully: {file_path}")
-    logger.success(f"File metadata retrieved successfully: {file_path}")
+    logger.info(f"File metadata retrieved successfully: {file_path}")
     response.headers["Content-Type"] = get_object_response["ContentType"]
     response.headers["Content-Length"] = str(get_object_response["ContentLength"])
     response.headers["Last-Modified"] = get_object_response["LastModified"].strftime("%a, %d %b %Y %H:%M:%S GMT")
@@ -282,7 +283,7 @@ async def get_file(
     response.status_code = status.HTTP_200_OK
 
     # logger.info(f"File retrieved successfully: {file_path}")
-    logger.success(f"File retrieved successfully: {file_path}")
+    logger.info(f"File retrieved successfully: {file_path}")
     return StreamingResponse(
         content=get_object_response["Body"],
         media_type=get_object_response["ContentType"],
@@ -318,8 +319,7 @@ async def delete_file(
         return response
 
     delete_s3_object(bucket_name=s3_bucket_name, object_key=file_path)
-    # logger.info(f"File deleted successfully at {file_path}")
-    logger.success(f"File deleted successfully at {file_path}")
+    logger.info(f"File deleted successfully at {file_path}")
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
 
@@ -384,7 +384,7 @@ async def generate_file_using_openai(
 
     # If content_type is None, try to guess it from the file path
     content_type: str | None = content_type or mimetypes.guess_type(query_params.file_path)[0]  # type: ignore
-    logger.info(f"Content-Type for the generated file: {content_type}")
+    logger.debug(f"Content-Type for the generated file: {content_type}")
 
     # Upload the generated file to S3
     upload_s3_object(
@@ -393,9 +393,7 @@ async def generate_file_using_openai(
         file_content=file_content_bytes,
         content_type=content_type,
     )
-
-    # logger.info(f"Generated file uploaded successfully at path: {query_params.file_path}")
-    logger.success(f"Generated file uploaded successfully at path: {query_params.file_path}")
+    logger.info(f"Generated file uploaded successfully at path: {query_params.file_path}")
     response.status_code = status.HTTP_201_CREATED
     return PostFileResponse(
         file_path=query_params.file_path,
