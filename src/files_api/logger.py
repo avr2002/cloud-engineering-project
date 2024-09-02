@@ -3,19 +3,11 @@ from __future__ import annotations
 import json
 import os
 import sys
+import traceback
 
 import loguru
 from fastapi import Request
 from loguru import logger
-
-
-def serialize_extra_keys(record: loguru.Record) -> loguru.Record:
-    extra = record["extra"]
-    level = record["level"].name
-    if extra:
-        extra["level"] = level
-        record["extra"] = json.dumps(extra)
-    return record
 
 
 def configure_logger() -> loguru.Logger:
@@ -24,10 +16,11 @@ def configure_logger() -> loguru.Logger:
         "handlers": [
             {
                 "sink": sys.stdout,
-                "format": "{file}:{line}:{function} | {message} | {extra}",
-                "filter": serialize_extra_keys,
+                "format": "<level>{level}</level> | <cyan>{file}:{line}:{function}</cyan> | <white>{message}</white> | <dim><white>{extra}</white></dim> {stacktrace}",
+                "filter": postprocess_log_record,
                 "diagnose": False,
                 "backtrace": False,
+                "colorize": True,
             },
         ],
     }
@@ -38,7 +31,47 @@ def configure_logger() -> loguru.Logger:
     return logger
 
 
-async def inject_lambda_context(request: Request, call_next):
+def postprocess_log_record(record: loguru.Record) -> loguru.Record:
+    """
+    Inject transformed metadata into each log record before they are passed to the formatter.
+
+    For instance,
+
+    1. Serialize the "extra" field to JSON so that renders nicely in CloudWatch logs.
+    2. For error logs, add a traceback with \r instead of \n so that CloudWatch does not
+       split the traceback into multiple log events.
+    """
+    extra = record["extra"]
+    level = record["level"].name
+
+    # serialize "extra" field to JSON
+    if extra:
+        extra["level"] = level
+        record["extra"] = json.dumps(extra, default=str)  # type: ignore
+
+    # add stacktrace to log record
+    record["stacktrace"] = ""  # type: ignore
+    if record["exception"]:
+        exc = record["exception"]
+        stacktrace = get_formatted_stacktrace(exc, replace_newline_character_with_carriage_return=True)
+        record["stacktrace"] = stacktrace  # type: ignore
+
+    return record
+
+
+def get_formatted_stacktrace(
+    loguru_record_exception: loguru.RecordException, replace_newline_character_with_carriage_return: bool
+) -> str:
+    """Get the formatted stacktrace for the current exception."""
+    exc_type, exc_value, exc_traceback = loguru_record_exception
+    stacktrace: list[str] = traceback.format_exception(exc_type, exc_value, exc_traceback)
+    stacktrace: str = "".join(stacktrace)  # type: ignore
+    if replace_newline_character_with_carriage_return:
+        stacktrace = stacktrace.replace("\n", "\r")  # type: ignore
+    return stacktrace  # type: ignore
+
+
+async def inject_lambda_context__middleware(request: Request, call_next):
     """Middleware to add Lambda context to FastAPI request scope."""
 
     try:
@@ -60,8 +93,7 @@ async def inject_lambda_context(request: Request, call_next):
             "function_request_id": "local-development",
         }
 
-    with logger.contextualize(**lambda_context):
+    with logger.contextualize(aws_lambda=lambda_context):
         response = await call_next(request)
 
     return response
-

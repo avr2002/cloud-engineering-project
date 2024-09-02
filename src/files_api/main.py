@@ -13,7 +13,7 @@ from files_api.errors import (
 )
 from files_api.routes import ROUTER
 from files_api.settings import Settings
-from files_api.logger import inject_lambda_context, configure_logger
+from files_api.logger import inject_lambda_context__middleware, configure_logger
 
 
 def custom_generate_unique_id(route: APIRoute):
@@ -62,7 +62,7 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
         handler=handle_pydantic_validation_error,
     )
     app.middleware("http")(handle_broad_exceptions)
-    app.middleware("http")(inject_lambda_context)
+    app.middleware("http")(inject_lambda_context__middleware)
     return app
 
 

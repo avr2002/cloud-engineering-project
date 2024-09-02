@@ -4,6 +4,10 @@ import mimetypes
 from typing import Annotated
 
 import requests  # type: ignore
+from aws_embedded_metrics import (
+    MetricsLogger,
+    metric_scope,
+)
 from fastapi import (
     APIRouter,
     Depends,
@@ -16,14 +20,14 @@ from fastapi import (
     status,
 )
 from fastapi.responses import StreamingResponse
-
-# from files_api.logger_config import logger
 from loguru import logger
+
 from files_api.generate import (
     generate_image,
     generate_text_to_speech,
     get_text_chat_completion,
 )
+from files_api.route_handler import RouteHandler
 from files_api.s3.delete_objects import delete_s3_object
 from files_api.s3.read_objects import (
     fetch_s3_object,
@@ -42,8 +46,6 @@ from files_api.schemas import (
     PutFileResponse,
 )
 from files_api.settings import Settings
-from files_api.route_handler import RouteHandler
-from aws_embedded_metrics import metric_scope, MetricsLogger
 
 ROUTER = APIRouter()
 ROUTER.route_class = RouteHandler
@@ -80,13 +82,11 @@ async def upload_file(
     if object_already_exists:
         response_message = f"Existing file updated at path: {file_path}"
 
-        # logger.info(f"File updated successfully: {file_path}")
         logger.info(f"File updated successfully: {file_path}")
         response.status_code = status.HTTP_200_OK
     else:
         response_message = f"New file uploaded at path: {file_path}"
 
-        # logger.info(f"File uploaded successfully: {file_path}")
         logger.info(f"File uploaded successfully: {file_path}")
         response.status_code = status.HTTP_201_CREATED
 
@@ -147,7 +147,6 @@ async def list_files(
         for file in files
     ]
 
-    # logger.info(f"Files retrieved successfully: {len(files_metadata)} files")
     logger.info(f"Files retrieved successfully: {len(files_metadata)} files")
     response.status_code = status.HTTP_200_OK
     return GetFilesResponse(
@@ -282,7 +281,6 @@ async def get_file(
 
     response.status_code = status.HTTP_200_OK
 
-    # logger.info(f"File retrieved successfully: {file_path}")
     logger.info(f"File retrieved successfully: {file_path}")
     return StreamingResponse(
         content=get_object_response["Body"],
@@ -367,20 +365,20 @@ async def generate_file_using_openai(
         file_content_bytes: bytes = file_content.encode("utf-8")  # convert string to bytes
         content_type = "text/plain"
 
-        logger.info("Text file generated successfully")
+        logger.debug("Text file generated successfully")
     elif query_params.file_type == GeneratedFileType.IMAGE:
         image_url = await generate_image(prompt=query_params.prompt)
         # Download the image from the URL
         image_response = requests.get(image_url)  # pylint: disable=missing-timeout
         file_content_bytes = image_response.content
 
-        logger.info(f"Image file generated successfully: {image_url}")
+        logger.debug(f"Image file generated successfully: {image_url}")
     else:
         response_format = query_params.file_path.split(".")[-1]
         file_content_bytes, content_type = await generate_text_to_speech(
             prompt=query_params.prompt, response_format=response_format  # type: ignore
         )
-        logger.info("Text-to-Speech file generated successfully")
+        logger.debug("Text-to-Speech file generated successfully")
 
     # If content_type is None, try to guess it from the file path
     content_type: str | None = content_type or mimetypes.guess_type(query_params.file_path)[0]  # type: ignore
