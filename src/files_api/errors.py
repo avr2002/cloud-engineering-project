@@ -1,6 +1,7 @@
 """Custom error handlers for the Fast API application."""
 
 import pydantic
+from aws_embedded_metrics.logger.metrics_logger import MetricsLogger
 from fastapi import (
     Request,
     status,
@@ -8,15 +9,20 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from loguru import logger
 
+from files_api.metrics import metrics_ctx
+
 
 # Fast API Docs on Middleware: https://fastapi.tiangolo.com/tutorial/middleware/
-async def handle_broad_exceptions(request: Request, call_next):
+async def handle_broad_exceptions__middleware(request: Request, call_next):
     """Handle any exception that goes unhandled by a more specific exception handler."""
     try:
         return await call_next(request)
     except Exception as exc:  # pylint: disable=broad-except
         logger.exception("Unhandled Exception: {}", exc)
-        # metrics.add_metric(name="UnhandledExceptions", unit="Count", value=1)
+
+        metrics: MetricsLogger = metrics_ctx.get()
+        if metrics:
+            metrics.put_metric(key="UnhandledExceptions", value=1, unit="Count")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={

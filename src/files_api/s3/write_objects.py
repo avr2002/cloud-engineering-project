@@ -3,9 +3,13 @@
 from typing import Optional
 
 import boto3
+from aws_embedded_metrics.logger.metrics_logger import MetricsLogger
+
+from files_api.metrics import metrics_ctx
 
 try:
     from mypy_boto3_s3 import S3Client
+    from mypy_boto3_s3.type_defs import PutObjectOutputTypeDef
 except ImportError:
     ...
 
@@ -26,7 +30,7 @@ def upload_s3_object(
     file_content: bytes,
     content_type: Optional[str] = None,
     s3_client: Optional["S3Client"] = None,
-) -> None:
+) -> "PutObjectOutputTypeDef":
     """
     Uploads a file to an S3 bucket.
 
@@ -39,9 +43,19 @@ def upload_s3_object(
     s3_client = s3_client or boto3.client("s3")
     # If content_type is None, set it to "application/octet-stream", the default MIME type used by S3.
     content_type = content_type or "application/octet-stream"
-    s3_client.put_object(
+    response: "PutObjectOutputTypeDef" = s3_client.put_object(
         Bucket=bucket_name,
         Key=object_key,
         Body=file_content,
         ContentType=content_type,
     )
+
+    # not a terrific practice to have this generic upload function be aware of metrics
+    # logging as well, e.g. what if we wanted to use this function outside the context of this app?
+    # but for brevity we will include this here. A better approach would be to have a caller function
+    # wrap this one, call it, and log the metric.
+    metrics = metrics_ctx.get()
+    if metrics:
+        metrics.put_metric(key="S3BytesUploaded", value=len(file_content))
+
+    return response

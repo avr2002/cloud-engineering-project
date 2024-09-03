@@ -232,17 +232,10 @@ function run-mock {
 	# Export Log Level
 	export LOGURU_LEVEL="DEBUG"
 
-	# Setup environment variables for aws-embedded-metrics
-	export AWS_EMF_SERVICE_NAME="FilesAPIService"
-	export AWS_EMF_NAMESPACE="FilesAPINamespace"
-	# export AWS_EMF_LOG_GROUP_NAME="FilesAPIServiceLogGroup"
-	# export AWS_EMF_LOG_STREAM_NAME="FilesAPIServiceLogStream"
-	# export AWS_EMF_SERVICE_TYPE="API"
-	export AWS_EMF_ENVIRONMENT="local"
-
-	# Set Service and Metric Namespace for aws_lambda_powertools
-	# export POWERTOOLS_SERVICE_NAME="FilesAPIService"
-	# export POWERTOOLS_METRICS_NAMESPACE="FilesAPINamespace"
+	# Export AWS EMF Environment Variables
+	export AWS_EMF_ENVIRONMENT=local # causes metrics to go to stdout
+    export AWS_EMF_ENABLE_DEBUG_LOGGING="true"
+    export AWS_EMF_NAMESPACE=local-fastapi-service
 
 	# create a bucket called "some-bucket" using the mocked aws server
 	aws s3 mb "s3://$S3_BUCKET_NAME"

@@ -1,4 +1,5 @@
-import os
+"""Generate text, images, and audio from prompts using OpenAI's API."""
+
 from typing import (
     Literal,
     Optional,
@@ -6,36 +7,20 @@ from typing import (
     Union,
 )
 
-from aws_embedded_metrics import (
-    MetricsLogger,
-    metric_scope,
-)
+from aws_embedded_metrics import MetricsLogger
 from aws_embedded_metrics.storage_resolution import StorageResolution
-
-# from aws_lambda_powertools.metrics import MetricUnit
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
+
+from files_api.metrics import metrics_ctx
 
 SYSTEM_PROMPT = "You are an autocompletion tool that produces text files given constraints."
 
 
-def get_openai_client() -> AsyncOpenAI:
-    # point to a local mock of OpenAI, se these env vars in your .env file while testing
-    # base_url="http://localhost:1080", api_key="mocked_key"
-    base_url = os.getenv("OPENAI_BASE_URL")
-    api_key = os.getenv("OPENAI_API_KEY")
-
-    client = AsyncOpenAI(base_url=base_url, api_key=api_key)
-    return client
-
-
-@metric_scope
-async def get_text_chat_completion(
-    prompt: str, metrics: MetricsLogger, openai_client: Optional[AsyncOpenAI] = None
-) -> str:
+async def get_text_chat_completion(prompt: str, openai_client: Optional[AsyncOpenAI] = None) -> str:
     """Generate a text chat completion from a given prompt."""
     # get the OpenAI client
-    client = openai_client or get_openai_client()
+    client = openai_client or AsyncOpenAI()
 
     # get the completion
     response: ChatCompletion = await client.chat.completions.create(
@@ -48,19 +33,21 @@ async def get_text_chat_completion(
         n=1,  # number of responses
     )
 
-    metrics.put_metric(
-        key="OpenAITokensUsage",
-        value=response.usage.total_tokens,
-        unit="Count",
-        storage_resolution=StorageResolution.STANDARD,
-    )
+    metrics: MetricsLogger = metrics_ctx.get()
+    if metrics:
+        metrics.put_metric(
+            key="OpenAITokensUsage",
+            value=response.usage.total_tokens,
+            unit="Count",
+            storage_resolution=StorageResolution.STANDARD,
+        )
     return response.choices[0].message.content or ""
 
 
 async def generate_image(prompt: str, openai_client: Optional[AsyncOpenAI] = None) -> Union[str, None]:
     """Generate an image from a given prompt."""
     # get the OpenAI client
-    client = openai_client or get_openai_client()
+    client = openai_client or AsyncOpenAI()
 
     # get image response from OpenAI
     image_response = await client.images.generate(
@@ -70,6 +57,10 @@ async def generate_image(prompt: str, openai_client: Optional[AsyncOpenAI] = Non
         quality="standard",
         n=1,
     )
+
+    metrics: MetricsLogger = metrics_ctx.get()
+    if metrics:
+        metrics.put_metric(key="OpenAIImageGeneratedCount", value=1, unit="Count")
 
     return image_response.data[0].url or None
 
@@ -85,7 +76,7 @@ async def generate_text_to_speech(
     Returns the audio content as bytes and the MIME type as a string.
     """
     # get the OpenAI client
-    client = openai_client or get_openai_client()
+    client = openai_client or AsyncOpenAI()
 
     # get audio response from OpenAI
     audio_response = await client.audio.speech.with_raw_response.create(
@@ -98,5 +89,9 @@ async def generate_text_to_speech(
     # Get the audio content as bytes
     file_content_bytes: bytes = audio_response.content
     file_mime_type: str = audio_response.headers.get("Content-Type")
+
+    metrics: MetricsLogger = metrics_ctx.get()
+    if metrics:
+        metrics.put_metric(key="OpenAITextToSpeechGeneratedCount", value=1, unit="Count")
 
     return file_content_bytes, file_mime_type

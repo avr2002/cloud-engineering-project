@@ -8,12 +8,16 @@ from fastapi import FastAPI
 from fastapi.routing import APIRoute
 
 from files_api.errors import (
-    handle_broad_exceptions,
+    handle_broad_exceptions__middleware,
     handle_pydantic_validation_error,
 )
+from files_api.logger import (
+    configure_logger,
+    inject_lambda_context__middleware,
+)
+from files_api.metrics import start_metrics_context__middleware
 from files_api.routes import ROUTER
 from files_api.settings import Settings
-from files_api.logger import inject_lambda_context__middleware, configure_logger
 
 
 def custom_generate_unique_id(route: APIRoute):
@@ -54,15 +58,17 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
         generate_unique_id_function=custom_generate_unique_id,
     )
     # app.state.s3_bucket_name = s3_bucket_name
-    
+
     app.state.settings = settings
     app.include_router(ROUTER)
     app.add_exception_handler(
         exc_class_or_status_code=pydantic.ValidationError,
         handler=handle_pydantic_validation_error,
     )
-    app.middleware("http")(handle_broad_exceptions)
+    # these middlewares get executed in reverse order that they are added to the app
+    app.middleware("http")(handle_broad_exceptions__middleware)  # last middleware
     app.middleware("http")(inject_lambda_context__middleware)
+    app.middleware("http")(start_metrics_context__middleware)
     return app
 
 
