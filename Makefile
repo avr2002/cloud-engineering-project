@@ -25,6 +25,9 @@ generate-client-library:
 run:
 	bash run.sh run
 
+run-docker:
+	bash run.sh run-docker
+
 run-mock:
 	bash run.sh run-mock
 

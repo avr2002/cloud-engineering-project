@@ -1,0 +1,74 @@
+# ship the fastapi metrics, traces, and logs to AWS
+
+services:
+
+  fastapi:
+    # logs to stdout (including metrics in EMF json format); pushes xray traces to the xray-daemon
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # app config
+      CREATE_BUCKET_ON_STARTUP: "true"  # in Dockerfile
+      S3_BUCKET_NAME: "mock-bucket"
+      LOGURU_LEVEL: DEBUG
+      PORT: "8000"
+      # openai mock (comment these out if you want to use real openai)
+      OPENAI_BASE_URL: "http://mocked-openai:1080"
+      OPENAI_API_KEY: mock-key
+      # aws mock (comment these if you want to use real aws)
+      AWS_ENDPOINT_URL: "http://mocked-aws:5000"
+      AWS_ACCESS_KEY_ID: mock-key-id
+      AWS_SECRET_ACCESS_KEY: mock-key
+      AWS_REGION: ap-south-1
+      # metrics
+      AWS_EMF_ENVIRONMENT: local # causes metrics to go to stdout
+      AWS_EMF_ENABLE_DEBUG_LOGGING: "true"
+      AWS_EMF_NAMESPACE: local-fastapi-service
+      AWS_EMF_DISABLE_METRIC_EXTRACTION: "false" # prevents logging metrics to stdout when true
+    depends_on:
+      - mocked-aws
+    # uncomment this section if you want to use real aws credentials; or mount aws creds into container
+    # env_file:
+    #   - .env
+    #   - openai.env  # create this file if you want to use real OpenAI
+    volumes:
+      - ./:/app
+  
+  mocked-aws:
+    # mock aws' endpoints on port 5001 (with moto)
+    image: motoserver/moto:5.0.13
+    command: -p 5000
+    ports:
+      - "5000:5000"
+
+  mocked-openai:
+    image: mockserver/mockserver:latest
+    ports:
+        - "1080:1080"
+    environment:
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /data/preset-openai-responses.json
+      # ↓ hot reload when the spec.json changes 😍
+      MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+    volumes:
+      - ./:/data
+
+  logspout:
+    # Logs: uses the docker daemon to collect logs from fastapi's stdout and push to cloudwatch
+    image: mdsol/logspout:latest
+    command: "cloudwatch://${AWS_REGION:-ap-south-1}?NOEC2" # default AWS_REGION to ap-south-1 if env var not set
+    # command: "cloudwatch://${AWS_REGION}?DEBUG=1&NOEC2"  # use this line for verbose debug logs
+    environment:
+      EXCLUDE_LABELS: "logspout=disable"
+      LOGSPOUT_GROUP: local-fastapi-group
+      LOGSPOUT_STREAM: "{{.Name}}"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock
+    env_file:
+      # aws credentials for pushing logs to cloudwatch
+      - .env
+    depends_on:
+      - fastapi
+  

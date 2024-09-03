@@ -1,11 +1,16 @@
 services:
-  mockserver:
-      image: mockserver/mockserver:latest
-      ports:
-        - "1080:1080"
-      environment:
-        MOCKSERVER_INITIALIZATION_JSON_PATH: /data/preset-openai-responses.json
-        # ↓ hot reload when the spec.json changes 😍
-        MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
-      volumes:
-        - .:/data
+  mocked-openai:
+    image: mockserver/mockserver:latest
+    ports:
+      - "1080:1080"
+    environment:
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /data/preset-openai-responses.json
+      MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+    volumes:
+      - .:/data
+    networks:
+      - mock-network
+
+networks:
+  mock-network:
+    driver: bridge

@@ -6,6 +6,9 @@ set -e
 # --- Constants --- #
 #####################
 
+AWS_PROFILE="cloud-course"
+AWS_REGION="ap-south-1"
+
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 MINIMUM_TEST_COVERAGE_PERCENT=0
 
@@ -32,9 +35,14 @@ function install {
 # Note, this function assumes that
 # - a lambda function named $AWS_LAMBDA_FUNCTION_NAME already exists
 # - docker 🐳 is required to run this function
+
+function set-local-aws-env-vars {
+    export AWS_PROFILE
+    export AWS_REGION
+}
+
 function deploy-lambda {
-	export AWS_PROFILE=cloud-course
-	export AWS_REGION=ap-south-1
+	set-local-aws-env-vars
 	deploy-lambda:cd
 }
 
@@ -115,8 +123,7 @@ function deploy-lambda:cd {
 
 function deploy-lambda:code {
 	# Function to deploy the application code to the lambda function
-	export AWS_PROFILE=cloud-course
-	export AWS_REGION=ap-south-1
+	set-local-aws-env-vars
 
 	LAMBDA_HANDLER_ZIP_FPATH="${BUILD_DIR}/lambda.zip"
 	SRC_DIR="${THIS_DIR}/src"
@@ -156,52 +163,34 @@ function update-dashboard {
 	echo "Dashboard updated successfully with version $(cat $VERSION_TXT_PATH)"
 }
 
-
-
-function install-generated-sdk {
-	# install the generated SDK in newly created venv
-	python -m pip install --upgrade pip
-	python -m pip install --editable "$THIS_DIR/files-api-sdk/" \
-		--config-settings editable_mode=strict
-}
-
-
-function generate-client-library {
-	# Get the current user ID and group ID to run the docker command with so that
-	# the generated SDK folder doesn't have root permissions, instead user level permission
-	USER_ID=$(id -u)
-	GROUP_ID=$(id -g)
-
-	docker run --rm \
-	--user $USER_ID:$GROUP_ID \
-	-v $PWD:/local openapitools/openapi-generator-cli generate \
-	--generator-name python-pydantic-v1 \
-	--input-spec /local/openapi.json \
-	--output /local/files-api-sdk \
-	--package-name files_api_sdk
-}
-
-
 function run {
-	AWS_PROFILE=cloud-course\
+	AWS_PROFILE=$AWS_PROFILE\
 	S3_BUCKET_NAME=python-aws-cloud-course-bucket\
 	uvicorn 'files_api.main:create_app' --reload
 }
 
 
-function run-local {
-	if [ -f .env ]; then
-		export $(grep -v '^#' .env | xargs)
-		# Capture the environment variables names
-		VARS=$(grep -v '^#' .env | cut -d= -f1)
-	fi
+# start the FastAPI app in a Docker container
+function run-docker {
+    aws configure export-credentials --profile $AWS_PROFILE --format env > .env
+    set-local-aws-env-vars
+    docker compose up --build
+}
 
+
+# start the FastAPI app locally with actual AWS & OpenAI credentials
+function run-local {
+	if [ ! -f "$THIS_DIR/.openai-env" ]; then
+        echo "No OpenAI environment file found. Please create a .openai-env file with the OpenAI API key."
+        return 1
+    fi
+
+	AWS_PROFILE=$AWS_PROFILE\
+	S3_BUCKET_NAME=python-aws-cloud-course-bucket\
 	uvicorn 'files_api.main:create_app' --reload
 
 	# Unset the environment variables
-	for var in $VARS; do
-		unset $var
-	done
+	unset OPENAI_API_KEY
 }
 
 # start the FastAPI app, pointed at a mocked aws endpoint
@@ -241,21 +230,48 @@ function run-mock {
 	aws s3 mb "s3://$S3_BUCKET_NAME"
 
 	# Start the Docker Compose to mock the OpenAI API
-	docker compose --file ./mock-openai-docker-compose.yaml up --detach
+	docker compose --file ./mock-openai-docker-compose.yaml up --detach # &
+	# OPENAI_MOCK_PID=$!
 
 	# Trap EXIT signal to kill the moto.server process when uvicorn stops
 	trap "kill $MOTO_PID; docker compose --file ./mock-openai-docker-compose.yaml down" EXIT
+	# trap "kill $MOTO_PID; kill $OPENAI_MOCK_PID" EXIT
 
 	# Set AWS endpoint URL and start FastAPI app with uvicorn in the foreground
 	uvicorn src.files_api.main:create_app --reload
 
-	# # Unset the environment variables
+	# Unset the environment variables
 	unset OPENAI_BASE_URL
 	unset OPENAI_API_KEY
 
 	# Wait for the moto.server process to finish (this is optional if you want to keep it running)
 	wait $MOTO_PID
 }
+
+
+function install-generated-sdk {
+	# install the generated SDK in newly created venv
+	python -m pip install --upgrade pip
+	python -m pip install --editable "$THIS_DIR/files-api-sdk/" \
+		--config-settings editable_mode=strict
+}
+
+
+function generate-client-library {
+	# Get the current user ID and group ID to run the docker command with so that
+	# the generated SDK folder doesn't have root permissions, instead user level permission
+	USER_ID=$(id -u)
+	GROUP_ID=$(id -g)
+
+	docker run --rm \
+	--user $USER_ID:$GROUP_ID \
+	-v $PWD:/local openapitools/openapi-generator-cli generate \
+	--generator-name python-pydantic-v1 \
+	--input-spec /local/openapi.json \
+	--output /local/files-api-sdk \
+	--package-name files_api_sdk
+}
+
 
 # run linting, formatting, and other static code quality tools
 function lint {
