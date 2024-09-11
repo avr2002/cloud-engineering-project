@@ -72,7 +72,7 @@ def fetch_s3_object(
 
     metrics: MetricsLogger = metrics_ctx.get()
     if metrics:
-        metrics.put_metric(key="S3BytesDownloaded", value=response["ContentLength"])
+        metrics.put_metric(key="S3BytesDownloaded", value=response["ContentLength"], unit="Bytes")
 
     return response
 

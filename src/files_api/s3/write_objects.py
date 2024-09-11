@@ -3,7 +3,6 @@
 from typing import Optional
 
 import boto3
-from aws_embedded_metrics.logger.metrics_logger import MetricsLogger
 
 from files_api.metrics import metrics_ctx
 
@@ -56,6 +55,6 @@ def upload_s3_object(
     # wrap this one, call it, and log the metric.
     metrics = metrics_ctx.get()
     if metrics:
-        metrics.put_metric(key="S3BytesUploaded", value=len(file_content))
+        metrics.put_metric(key="S3BytesUploaded", value=len(file_content), unit="Bytes")
 
     return response

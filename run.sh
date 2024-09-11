@@ -301,6 +301,13 @@ function test:ci {
 function run-tests {
 	PYTEST_EXIT_STATUS=0
 
+	# for the tests needs docker to be running, check if docker is running, if not, exit
+	if ! docker info >/dev/null 2>&1; then
+		echo "Docker is not running. Please start Docker Desktop and try again."
+		exit 1
+	fi
+
+
 	# clean the test-reports dir
 	rm -rf "$THIS_DIR/test-reports" || mkdir "$THIS_DIR/test-reports"
 

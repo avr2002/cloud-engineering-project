@@ -13,7 +13,7 @@ services:
       # app config
       CREATE_BUCKET_ON_STARTUP: "true"  # in Dockerfile
       S3_BUCKET_NAME: "mock-bucket"
-      LOGURU_LEVEL: DEBUG
+      LOGURU_LEVEL: INFO
       PORT: "8000"
       # openai mock (comment these out if you want to use real openai)
       OPENAI_BASE_URL: "http://mocked-openai:1080"
@@ -30,6 +30,7 @@ services:
       AWS_EMF_DISABLE_METRIC_EXTRACTION: "false" # prevents logging metrics to stdout when true
     depends_on:
       - mocked-aws
+      - mocked-openai
     # uncomment this section if you want to use real aws credentials; or mount aws creds into container
     # env_file:
     #   - .env
@@ -41,6 +42,8 @@ services:
     # mock aws' endpoints on port 5001 (with moto)
     image: motoserver/moto:5.0.13
     command: -p 5000
+    logging:
+      driver: none
     ports:
       - "5000:5000"
 
@@ -48,12 +51,14 @@ services:
     image: mockserver/mockserver:latest
     ports:
         - "1080:1080"
+    logging:
+      driver: none
     environment:
       MOCKSERVER_INITIALIZATION_JSON_PATH: /data/preset-openai-responses.json
       # ↓ hot reload when the spec.json changes 😍
       MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
     volumes:
-      - ./:/data
+      - ./preset-openai-responses.json:/data/preset-openai-responses.json
 
   logspout:
     # Logs: uses the docker daemon to collect logs from fastapi's stdout and push to cloudwatch
