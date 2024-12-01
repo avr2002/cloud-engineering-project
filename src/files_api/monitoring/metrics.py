@@ -17,7 +17,7 @@ async def start_metrics_context__middleware(request: Request, call_next):
 
     @metric_scope
     async def _start_metrics_context(metrics: MetricsLogger):
-        metrics.reset_dimensions(use_default=False)
+        metrics.reset_dimensions(use_default=False)  # remove the `aws_embedded_metrics` library's default dimensions
         # metrics.set_property("tracing", value=get_trace_context())
 
         metrics_ctx.set(metrics)
