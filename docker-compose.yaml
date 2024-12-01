@@ -14,12 +14,11 @@ services:
       CREATE_BUCKET_ON_STARTUP: "true"  # in Dockerfile
       S3_BUCKET_NAME: "mock-bucket"
       LOGURU_LEVEL: INFO
-      PORT: "8000"
       # openai mock (comment these out if you want to use real openai)
-      OPENAI_BASE_URL: "http://mocked-openai:1080"
+      OPENAI_BASE_URL: "http://openai-mock:1080"
       OPENAI_API_KEY: mock-key
       # aws mock (comment these if you want to use real aws)
-      AWS_ENDPOINT_URL: "http://mocked-aws:5000"
+      AWS_ENDPOINT_URL: "http://aws-mock:5000"
       AWS_ACCESS_KEY_ID: mock-key-id
       AWS_SECRET_ACCESS_KEY: mock-key
       AWS_REGION: ap-south-1
@@ -29,25 +28,25 @@ services:
       AWS_EMF_NAMESPACE: local-fastapi-service
       AWS_EMF_DISABLE_METRIC_EXTRACTION: "false" # prevents logging metrics to stdout when true
     depends_on:
-      - mocked-aws
-      - mocked-openai
+      - aws-mock
+      - openai-mock
     # uncomment this section if you want to use real aws credentials; or mount aws creds into container
     # env_file:
     #   - .env
     #   - openai.env  # create this file if you want to use real OpenAI
     volumes:
       - ./:/app
-  
-  mocked-aws:
-    # mock aws' endpoints on port 5001 (with moto)
-    image: motoserver/moto:5.0.13
+
+  aws-mock:
+    # mock aws' endpoints on port 5000 (with moto)
+    image: motoserver/moto:latest
     command: -p 5000
     logging:
       driver: none
     ports:
       - "5000:5000"
 
-  mocked-openai:
+  openai-mock:
     image: mockserver/mockserver:latest
     ports:
         - "1080:1080"
