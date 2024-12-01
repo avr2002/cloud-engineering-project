@@ -11,11 +11,9 @@ from files_api.errors import (
     handle_broad_exceptions__middleware,
     handle_pydantic_validation_error,
 )
-from files_api.logger import (
-    configure_logger,
-    inject_lambda_context__middleware,
-)
-from files_api.metrics import start_metrics_context__middleware
+from files_api.monitoring.logger import inject_lambda_context__middleware
+from files_api.monitoring.metrics import start_metrics_context__middleware
+from files_api.monitoring.tracer import start_xray_tracing__middleware
 from files_api.routes import ROUTER
 from files_api.settings import Settings
 
@@ -26,9 +24,7 @@ def custom_generate_unique_id(route: APIRoute):
 
 def create_app(settings: Union[Settings, None] = None) -> FastAPI:
     """Create a FastAPI application."""
-    # s3_bucket_name = s3_bucket_name or os.environ["S3_BUCKET_NAME"]
     settings = settings or Settings()
-    configure_logger()
 
     app = FastAPI(
         title="Files API",
@@ -57,8 +53,6 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
         root_path="/prod",  # adding stage name to the root path
         generate_unique_id_function=custom_generate_unique_id,
     )
-    # app.state.s3_bucket_name = s3_bucket_name
-
     app.state.settings = settings
     app.include_router(ROUTER)
     app.add_exception_handler(
@@ -69,6 +63,7 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
     app.middleware("http")(handle_broad_exceptions__middleware)  # last middleware
     app.middleware("http")(inject_lambda_context__middleware)
     app.middleware("http")(start_metrics_context__middleware)
+    app.middleware("http")(start_xray_tracing__middleware)  # first middleware
     return app
 
 

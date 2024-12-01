@@ -115,7 +115,7 @@ function deploy-lambda:cd {
 		--layers $LAYER_VERSION_ARN \
 		--handler "files_api.aws_lambda_handler.handler" \
 		--output json | cat
-	
+
 	# update FilesAPIDashboard with the new version annotation
 	update-dashboard
 }
@@ -145,7 +145,7 @@ function deploy-lambda:code {
 		--function-name "$AWS_LAMBDA_FUNCTION_NAME" \
 		--zip-file fileb://${LAMBDA_HANDLER_ZIP_FPATH} \
 		--output json | cat
-	
+
 	# update FilesAPIDashboard with the new version annotation
 	update-dashboard
 }
@@ -159,7 +159,7 @@ function update-dashboard {
 	python3 "$THIS_DIR/scripts/update_dashboard.py" \
 		--dashboard-name "$DASHBOARD_NAME" \
 		--version-txt-path "$VERSION_TXT_PATH"
-	
+
 	echo "Dashboard updated successfully with version $(cat $VERSION_TXT_PATH)"
 }
 
@@ -174,7 +174,7 @@ function run {
 function run-docker {
     aws configure export-credentials --profile $AWS_PROFILE --format env > .env
     set-local-aws-env-vars
-    docker compose up --build
+    docker compose up --remove-orphans --build
 }
 
 
@@ -187,7 +187,7 @@ function run-local {
 
 	AWS_PROFILE=$AWS_PROFILE\
 	S3_BUCKET_NAME=python-aws-cloud-course-bucket\
-	uvicorn 'files_api.main:create_app' --reload
+	uvicorn 'files_api.main:create_app' --factory --host 0.0.0.0 --port 8000 --reload
 
 	# Unset the environment variables
 	unset OPENAI_API_KEY
@@ -238,7 +238,7 @@ function run-mock {
 	# trap "kill $MOTO_PID; kill $OPENAI_MOCK_PID" EXIT
 
 	# Set AWS endpoint URL and start FastAPI app with uvicorn in the foreground
-	uvicorn src.files_api.main:create_app --reload
+	uvicorn src.files_api.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
 
 	# Unset the environment variables
 	unset OPENAI_BASE_URL
