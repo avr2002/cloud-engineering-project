@@ -109,11 +109,6 @@
         "responses": {
           "200": {
             "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
             "headers": {
               "Content-Type": {
                 "description": "The [MIME type](https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types/Common_types) of the file.",
@@ -461,6 +456,20 @@
                       "message": "New Text-to-Speech file generated and uploaded at path: path/to/speech.mp3"
                     }
                   }
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "File already exists.",
+            "content": {
+              "application/json": {
+                "example": {
+                  "file_path": "path/to/file.txt",
+                  "message": "File already exists: path/to/file.txt"
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/PostFileResponse"
                 }
               }
             }
