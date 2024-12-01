@@ -27,6 +27,12 @@ services:
       AWS_EMF_ENABLE_DEBUG_LOGGING: "true"
       AWS_EMF_NAMESPACE: local-fastapi-service
       AWS_EMF_DISABLE_METRIC_EXTRACTION: "false" # prevents logging metrics to stdout when true
+      # traces - xray sdk (https://github.com/aws/aws-xray-sdk-python)
+      # https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-python-configuration.html#xray-sdk-python-configuration-envvars
+      AWS_XRAY_TRACING_NAME: "Files API"
+      AWS_XRAY_DAEMON_ADDRESS: xray-daemon:2000
+      AWS_XRAY_DAEMON_CONTEXT_MISSING: RUNTIME_ERROR # raise an exception if xray context is missing
+      AWS_XRAY_SDK_ENABLED: "true" # can disable sending traces to xray daemon
     depends_on:
       - aws-mock
       - openai-mock
@@ -76,3 +82,16 @@ services:
     depends_on:
       - fastapi
   
+  xray-daemon:
+    # Traces: listens for the fastapi service to send traces and pushes them to cloudwatch/xray
+    image: amazon/aws-xray-daemon:latest
+    command: |
+      --local-mode
+      --bind 0.0.0.0:2000
+      --bind-tcp 0.0.0.0:2000
+      --region ${AWS_REGION:-us-west-2}
+      --log-level dev
+    ports:
+      - "2000:2000/udp"
+    env_file:
+      - .env

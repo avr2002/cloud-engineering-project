@@ -4,7 +4,7 @@
 
 [project]
 name = "cloud-engineering-project"
-description = "My package description"
+description = "Files API to upload and download files from S3 using FastAPI."
 authors = [{ name = "Amit Vikram Raj", email = "avr13405@gmail.com" }]
 readme = "README.md"
 requires-python = ">=3.7"
@@ -18,6 +18,7 @@ dependencies = [
     "loguru",
     "python-multipart",
     "aws-embedded-metrics",
+    "aws-xray-sdk",
 ]
 classifiers = ["Programming Language :: Python :: 3"]
 keywords = [
@@ -55,7 +56,6 @@ static-code-qa = [
     "Flake8-pyproject",
     "radon",
 ]
-docker = ["gunicorn", "uvicorn"]
 # Installing dev depenendencies in your virtual env makes it so that during development VS Code can
 # - surface linting errors
 # - automatically apply formatting

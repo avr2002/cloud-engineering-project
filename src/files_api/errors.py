@@ -9,7 +9,9 @@ from fastapi import (
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from files_api.metrics import metrics_ctx
+from files_api.monitoring.logger import log_response_info
+from files_api.monitoring.metrics import metrics_ctx
+from files_api.monitoring.tracer import capture_traceback_in_xray_trace
 
 
 # Fast API Docs on Middleware: https://fastapi.tiangolo.com/tutorial/middleware/
@@ -18,18 +20,22 @@ async def handle_broad_exceptions__middleware(request: Request, call_next):
     try:
         return await call_next(request)
     except Exception as exc:  # pylint: disable=broad-except
-        logger.exception("Unhandled Exception: {}", exc)
+        logger.exception(exc)
+        capture_traceback_in_xray_trace(exc)
 
         metrics: MetricsLogger = metrics_ctx.get()
         if metrics:
             metrics.put_metric(key="UnhandledExceptions", value=1, unit="Count")
-        return JSONResponse(
+
+        response = JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
                 "message": "An unexpected error occurred.",
                 "detail": "Internal Server Error",
             },
         )
+        log_response_info(response)
+        return response
 
 
 # Fast API Docs on Error Handlers:
@@ -37,8 +43,9 @@ async def handle_broad_exceptions__middleware(request: Request, call_next):
 async def handle_pydantic_validation_error(request: Request, exc: pydantic.ValidationError) -> JSONResponse:
     """Handle Pydantic validation errors."""
     errors = exc.errors()
-    logger.exception("Validation Error: {}", exc)
-    return JSONResponse(
+    logger.exception(exc)
+    capture_traceback_in_xray_trace(exc)
+    response = JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "detail": [
@@ -50,3 +57,5 @@ async def handle_pydantic_validation_error(request: Request, exc: pydantic.Valid
             ]
         },
     )
+    log_response_info(response)
+    return response
