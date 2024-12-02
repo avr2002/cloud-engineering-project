@@ -178,6 +178,17 @@ function run-docker {
     docker compose up --remove-orphans --build
 }
 
+# Run with Locust
+function run-locust {
+    set-local-aws-env-vars
+    aws configure export-credentials --profile $AWS_PROFILE --format env > .env
+    docker compose \
+        --file docker-compose.yaml \
+        --file docker-compose.locust.yaml \
+        up \
+        --build
+}
+
 
 # start the FastAPI app locally with actual AWS & OpenAI credentials
 function run-local {

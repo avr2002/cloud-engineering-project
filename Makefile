@@ -28,6 +28,9 @@ run:
 run-docker:
 	bash run.sh run-docker
 
+run-locust:
+	bash run.sh run-locust
+
 run-mock:
 	bash run.sh run-mock
 

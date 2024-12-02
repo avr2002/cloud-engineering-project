@@ -41,10 +41,10 @@ version = { file = "version.txt" }
 # optional dependencies can be installed with square brackets, e.g. `pip install my-package[test,static-code-qa]`
 [project.optional-dependencies]
 aws-lambda = ["mangum"]
-api = ["uvicorn", "moto[server]"]
+api = ["moto[server]"]
 stubs = ["boto3-stubs[s3, cloudwatch, logs]"]
 notebooks = ["jupyter", "ipykernel", "rich"]
-test = ["pytest", "pytest-cov", "moto[s3]"]
+test = ["pytest", "pytest-cov", "moto[s3]", "uvicorn", "locust"]
 release = ["build", "twine"]
 static-code-qa = [
     "pre-commit",
