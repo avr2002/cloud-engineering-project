@@ -62,8 +62,8 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
     # these middlewares get executed in reverse order that they are added to the app
     app.middleware("http")(handle_broad_exceptions__middleware)  # last middleware
     app.middleware("http")(inject_lambda_context__middleware)
-    app.middleware("http")(start_metrics_context__middleware)
-    app.middleware("http")(start_xray_tracing__middleware)  # first middleware
+    app.middleware("http")(start_xray_tracing__middleware)
+    app.middleware("http")(start_metrics_context__middleware)   # first middleware
     return app
 
 
