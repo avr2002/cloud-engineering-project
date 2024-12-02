@@ -393,42 +393,24 @@
         }
       }
     },
-    "/v1/files/generated/{file_path}": {
+    "/v1/files/generated": {
       "post": {
         "tags": [
           "Generate Files"
         ],
         "summary": "AI Generated Files",
-        "description": "Generate a File using AI.\n\n```\nSupported file types:\n- Text: .txt\n- Image: .png, .jpg, .jpeg\n- Text-to-Speech: .mp3, .opus, .aac, .flac, .wav, .pcm\n```",
+        "description": "Generate a File using AI.\n\n```\nSupported file types(Case):\n- Text: .txt\n- Image: .png, .jpg, .jpeg\n- Text-to-Speech: .mp3, .opus, .aac, .flac, .wav, .pcm\n```",
         "operationId": "Generate Files-generate_file_using_openai",
-        "parameters": [
-          {
-            "name": "file_path",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "File Path"
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateFilesBody"
+              }
             }
           },
-          {
-            "name": "prompt",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Prompt"
-            }
-          },
-          {
-            "name": "file_type",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "$ref": "#/components/schemas/GeneratedFileType"
-            }
-          }
-        ],
+          "required": true
+        },
         "responses": {
           "201": {
             "description": "Successful Response",
@@ -460,16 +442,16 @@
               }
             }
           },
-          "200": {
+          "400": {
             "description": "File already exists.",
             "content": {
               "application/json": {
-                "example": {
-                  "file_path": "path/to/file.txt",
-                  "message": "File already exists: path/to/file.txt"
-                },
                 "schema": {
                   "$ref": "#/components/schemas/PostFileResponse"
+                },
+                "example": {
+                  "file_path": "path/to/file.txt",
+                  "message": "File already exists. Please use a different file name."
                 }
               }
             }
@@ -535,6 +517,39 @@
         ],
         "title": "FileMetadata",
         "description": "`Metadata` of a file."
+      },
+      "GenerateFilesBody": {
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "title": "File Path",
+            "description": "The path to the file to generate.",
+            "example": "path/to/file.txt"
+          },
+          "prompt": {
+            "type": "string",
+            "title": "Prompt",
+            "description": "The prompt to generate the file content.",
+            "example": "Generate a text file."
+          },
+          "file_type": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GeneratedFileType"
+              }
+            ],
+            "description": "The type of file to generate.(case in-sensitive)",
+            "example": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file_path",
+          "prompt",
+          "file_type"
+        ],
+        "title": "GenerateFilesBody",
+        "description": "Request Body for `POST /v1/files/generated`."
       },
       "GeneratedFileType": {
         "type": "string",
