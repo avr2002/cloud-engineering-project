@@ -12,7 +12,7 @@ from aws_embedded_metrics.storage_resolution import StorageResolution
 from openai import AsyncOpenAI
 from openai.types.chat import ChatCompletion
 
-from files_api.metrics import metrics_ctx
+from files_api.monitoring.metrics import metrics_ctx
 
 SYSTEM_PROMPT = "You are an autocompletion tool that produces text files given constraints."
 
