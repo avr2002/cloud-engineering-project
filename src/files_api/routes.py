@@ -6,6 +6,7 @@ from typing import Annotated
 import requests  # type: ignore
 from fastapi import (
     APIRouter,
+    Body,
     Depends,
     File,
     HTTPException,
@@ -18,7 +19,7 @@ from fastapi import (
 from fastapi.responses import StreamingResponse
 from loguru import logger
 
-from files_api.generate import (
+from files_api.generate_files import (
     generate_image,
     generate_text_to_speech,
     get_text_chat_completion,
@@ -35,7 +36,7 @@ from files_api.s3.write_objects import upload_s3_object
 from files_api.schemas import (
     FileMetadata,
     GeneratedFileType,
-    GenerateFilesQueryParams,
+    GenerateFilesBody,
     GetFilesQueryParams,
     GetFilesResponse,
     PostFileResponse,
@@ -336,7 +337,7 @@ async def delete_file(
 
 
 @ROUTER.post(
-    "/v1/files/generated/{file_path:path}",
+    "/v1/files/generated",
     status_code=status.HTTP_201_CREATED,
     tags=["Generate Files"],
     summary="AI Generated Files",
@@ -354,25 +355,28 @@ async def delete_file(
                 },
             },
         },
-        status.HTTP_200_OK: {
+        status.HTTP_400_BAD_REQUEST: {
             "model": PostFileResponse,
             "description": "File already exists.",
             "content": {
                 "application/json": {
-                    "example": {"file_path": "path/to/file.txt", "message": "File already exists: path/to/file.txt"},
+                    "example": {
+                        "file_path": "path/to/file.txt",
+                        "message": "File already exists. Please use a different file name.",
+                    },
                 },
             },
         },
     },
 )
 async def generate_file_using_openai(
-    request: Request, response: Response, query_params: Annotated[GenerateFilesQueryParams, Depends()]
+    request: Request, response: Response, body: GenerateFilesBody = Body(...)
 ) -> PostFileResponse:
     """
     Generate a File using AI.
 
     ```
-    Supported file types:
+    Supported file types(Case):
     - Text: .txt
     - Image: .png, .jpg, .jpeg
     - Text-to-Speech: .mp3, .opus, .aac, .flac, .wav, .pcm
@@ -383,53 +387,50 @@ async def generate_file_using_openai(
     content_type = None  # Set the content type to None initially
 
     # Check if the file already exists
-    object_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=query_params.file_path)
+    object_exists = object_exists_in_s3(bucket_name=s3_bucket_name, object_key=body.file_path)
     logger.debug("object_exists_in_s3 = {exists}", exists=object_exists)
     if object_exists:
-        logger.info(f"File already exists: {query_params.file_path}")
-        response.status_code = status.HTTP_200_OK
+        logger.error(f"File already exists: {body.file_path}")
+        response.status_code = status.HTTP_400_BAD_REQUEST
         return PostFileResponse(
-            file_path=query_params.file_path,
-            message=f"File already exists: {query_params.file_path}",
+            file_path=body.file_path, message="File already exists. Please use a different file name."
         )
 
     # Generate the file based on the file type
-    logger.debug(
-        "Trying to generate content using OpenAI, query_params = {query_params}",
-        query_params=query_params.model_dump_json(),
-    )
-    if query_params.file_type == GeneratedFileType.TEXT:
-        file_content = await get_text_chat_completion(prompt=query_params.prompt)
+    logger.debug("Trying to generate content using OpenAI, request_body = {body}", body=body.model_dump_json())
+    if body.file_type == GeneratedFileType.TEXT:
+        file_content = await get_text_chat_completion(prompt=body.prompt)
         file_content_bytes: bytes = file_content.encode("utf-8")  # convert string to bytes
         content_type = "text/plain"
-    elif query_params.file_type == GeneratedFileType.IMAGE:
-        image_url = await generate_image(prompt=query_params.prompt)
+    elif body.file_type == GeneratedFileType.IMAGE:
+        image_url = await generate_image(prompt=body.prompt)
         # Download the image from the URL
         image_response = requests.get(image_url)  # pylint: disable=missing-timeout
         file_content_bytes = image_response.content
 
         logger.debug("Image file generated successfully, image_url: {image_url}", image_url=image_url)
     else:
-        response_format = query_params.file_path.split(".")[-1]
+        response_format = body.file_path.split(".")[-1]
         file_content_bytes, content_type = await generate_text_to_speech(
-            prompt=query_params.prompt, response_format=response_format  # type: ignore
+            prompt=body.prompt, response_format=response_format  # type: ignore
         )
 
     # If content_type is None, try to guess it from the file path
-    content_type: str | None = content_type or mimetypes.guess_type(query_params.file_path)[0]  # type: ignore
+    content_type: str | None = content_type or mimetypes.guess_type(body.file_path)[0]  # type: ignore
     logger.debug(f"Content-Type for the generated file: {content_type}")
 
     # Upload the generated file to S3
-    logger.debug("Trying to upload the generated file to S3: {file_path}", file_path=query_params.file_path)
+    logger.debug("Trying to upload the generated file to S3: {file_path}", file_path=body.file_path)
     upload_s3_object(
         bucket_name=s3_bucket_name,
-        object_key=query_params.file_path,
+        object_key=body.file_path,
         file_content=file_content_bytes,
         content_type=content_type,
     )
-    logger.info("Generated file uploaded successfully at path: {file_path}", file_path=query_params.file_path)
+
+    logger.info("Generated file uploaded successfully at path: {file_path}", file_path=body.file_path)
     response.status_code = status.HTTP_201_CREATED
     return PostFileResponse(
-        file_path=query_params.file_path,
-        message=f"New {query_params.file_type.value} file generated and uploaded at path: {query_params.file_path}",
+        file_path=body.file_path,
+        message=f"New {body.file_type.value} file generated and uploaded at path: {body.file_path}",
     )
