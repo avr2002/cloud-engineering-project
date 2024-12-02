@@ -16,6 +16,7 @@ from locust import (
 
 class FilesAPIUser(HttpUser):
     """Locust user class for the Files API."""
+
     wait_time = between(1, 5)
 
     @task
@@ -46,12 +47,20 @@ class FilesAPIUser(HttpUser):
     def generate_ai_files_flow(self):
         # Generate a text file
         text_file_path = f"ai_text_{random.randint(1000, 9999)}.txt"
-        text_request_body = {"file_path": text_file_path, "prompt": "Write a short poem about clouds", "file_type": "text"}
+        text_request_body = {
+            "file_path": text_file_path,
+            "prompt": "Write a short poem about clouds",
+            "file_type": "text",
+        }
         self.client.post("/v1/files/generated", json=text_request_body, name="Generate AI Text")
 
         # Generate an image file
         image_file_path = f"ai_image_{random.randint(1000, 9999)}.png"
-        image_request_body = {"file_path": image_file_path, "prompt": "A beautiful landscape with mountains and a lake", "file_type": "image"}
+        image_request_body = {
+            "file_path": image_file_path,
+            "prompt": "A beautiful landscape with mountains and a lake",
+            "file_type": "image",
+        }
         self.client.post("/v1/files/generated", json=image_request_body, name="Generate AI Image")
 
         # Generate an audio file

@@ -61,7 +61,9 @@ static-code-qa = [
 # - automatically apply formatting
 # - show enhanced autocompletion for stubs libraries
 # See .vscode/settings.json to see how VS Code is configured to use these tools
-dev = ["cloud-engineering-project[aws-lambda,test,release,static-code-qa,stubs,notebooks,api]"]
+dev = [
+    "cloud-engineering-project[aws-lambda,test,release,static-code-qa,stubs,notebooks,api]",
+]
 
 [build-system]
 # Minimum requirements for the build system to execute.
@@ -112,6 +114,19 @@ ignore = [
     "D104",
     # D105: Missing docstring in magic method
     "D105",
+    # Section name should be properly capitalized
+    "D405",
+    # Missing blank line after last section
+    "D413",
+    # Missing argument descriptions in the docstring
+    "D417",
+    # Missing dashed underline after section
+    "D407",
+    # First line should end with a period
+    "D400",
+    # First line should end with a period, question mark, or exclamation point
+    "D415",
+
 ]
 exclude = [".venv"]
 max-line-length = 119
