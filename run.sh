@@ -163,10 +163,11 @@ function update-dashboard {
 	echo "Dashboard updated successfully with version $(cat $VERSION_TXT_PATH)"
 }
 
+# start the FastAPI app locally with real AWS credentials
 function run {
 	AWS_PROFILE=$AWS_PROFILE\
 	S3_BUCKET_NAME=python-aws-cloud-course-bucket\
-	uvicorn 'files_api.main:create_app' --reload
+	uvicorn 'files_api.main:create_app' --factory --host 0.0.0.0 --port 8000 --reload
 }
 
 
@@ -203,6 +204,10 @@ function run-mock {
 		exit 1
 	fi
 
+	#####################################
+    # --- Mock AWS with Moto server --- #
+    #####################################
+
 	# Start moto.server in the background on localhost:5000
 	MOTO_PORT=5000
 	python -m moto.server -p $MOTO_PORT &
@@ -214,38 +219,57 @@ function run-mock {
 	export AWS_ACCESS_KEY_ID="mock"
 	export S3_BUCKET_NAME="some-bucket"
 
+	# create a bucket called "some-bucket" using the mocked aws server
+	aws s3 mb "s3://$S3_BUCKET_NAME"
+
+	#######################################
+    # --- Mock OpenAI with mockserver --- #
+    #######################################
+
 	# point the OpenAI API to the mocked OpenAI server using mocked credentials
-	export OPENAI_BASE_URL="http://localhost:1080"
+	export OPENAI_MOCK_PORT=1080
+	export OPENAI_BASE_URL="http://localhost:$OPENAI_MOCK_PORT"
 	export OPENAI_API_KEY="mocked_key"
+
+    python "$THIS_DIR/tests/mocks/openai_fastapi_mock_app.py" &
+    OPENAI_MOCK_PID=$!
+
+	###########################################################
+    # --- Schedule the mocks to shut down on FastAPI Exit --- #
+    ###########################################################
+
+    # Trap EXIT signal to kill the moto.server and mocked open-ai server process when uvicorn stops
+    trap "kill $MOTO_PID; kill $OPENAI_MOCK_PID" EXIT
+
+    # ----- #
+	# OLD OpenAI Mocking
+
+	# # Start the Docker Compose to mock the OpenAI API
+	# docker compose --file ./mock-openai-docker-compose.yaml up --detach
+
+	# # Trap EXIT signal to kill the moto.server process when uvicorn stops
+	# trap "kill $MOTO_PID; docker compose --file ./mock-openai-docker-compose.yaml down" EXIT
+
+	# ----- #
 
 	# Export Log Level
 	export LOGURU_LEVEL="DEBUG"
 
+	# Disable AWS X-Ray
+	export AWS_XRAY_SDK_ENABLED="false"
+
 	# Export AWS EMF Environment Variables
+	export AWS_EMF_DISABLE_METRIC_EXTRACTION="true"	# Disable EMF
 	export AWS_EMF_ENVIRONMENT=local # causes metrics to go to stdout
     export AWS_EMF_ENABLE_DEBUG_LOGGING="true"
     export AWS_EMF_NAMESPACE=local-fastapi-service
 
-	# create a bucket called "some-bucket" using the mocked aws server
-	aws s3 mb "s3://$S3_BUCKET_NAME"
-
-	# Start the Docker Compose to mock the OpenAI API
-	docker compose --file ./mock-openai-docker-compose.yaml up --detach # &
-	# OPENAI_MOCK_PID=$!
-
-	# Trap EXIT signal to kill the moto.server process when uvicorn stops
-	trap "kill $MOTO_PID; docker compose --file ./mock-openai-docker-compose.yaml down" EXIT
-	# trap "kill $MOTO_PID; kill $OPENAI_MOCK_PID" EXIT
-
-	# Set AWS endpoint URL and start FastAPI app with uvicorn in the foreground
+	# Start FastAPI app with uvicorn in the foreground
 	uvicorn src.files_api.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
-
-	# Unset the environment variables
-	unset OPENAI_BASE_URL
-	unset OPENAI_API_KEY
 
 	# Wait for the moto.server process to finish (this is optional if you want to keep it running)
 	wait $MOTO_PID
+	wait $OPENAI_MOCK_PID
 }
 
 
@@ -301,12 +325,9 @@ function test:ci {
 function run-tests {
 	PYTEST_EXIT_STATUS=0
 
-	# for the tests needs docker to be running, check if docker is running, if not, exit
-	if ! docker info >/dev/null 2>&1; then
-		echo "Docker is not running. Please start Docker Desktop and try again."
-		exit 1
-	fi
-
+	# Disable AWS X-Ray and AWS EMF
+	export AWS_XRAY_SDK_ENABLED="false"
+	export AWS_EMF_DISABLE_METRIC_EXTRACTION="true"	# Disable EMF
 
 	# clean the test-reports dir
 	rm -rf "$THIS_DIR/test-reports" || mkdir "$THIS_DIR/test-reports"
