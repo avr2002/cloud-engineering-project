@@ -16,8 +16,6 @@ RUN pip install --editable "/app/"
 COPY ./src/ /app/src/
 # COPY ./tests/ /app/tests/
 
-ENV PORT=8000
-
 # create the s3 bucket if desired(if false then using real S3 bucket), then start the fastapi app
 CMD (\
     if [ "$CREATE_BUCKET_ON_STARTUP" = "true" ]; then \

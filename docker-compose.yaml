@@ -36,6 +36,7 @@ services:
     depends_on:
       - aws-mock
       - openai-mock
+      - xray-daemon
     # uncomment this section if you want to use real aws credentials; or mount aws creds into container
     # env_file:
     #   - .env
@@ -53,17 +54,16 @@ services:
       - "5000:5000"
 
   openai-mock:
-    image: mockserver/mockserver:latest
-    ports:
-        - "1080:1080"
-    logging:
-      driver: none
+    image: openai-mock
+    build:
+      dockerfile: Dockerfile
+    entrypoint: python ./tests/mocks/openai_fastapi_mock_app.py
     environment:
-      MOCKSERVER_INITIALIZATION_JSON_PATH: /data/preset-openai-responses.json
-      # ↓ hot reload when the spec.json changes 😍
-      MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+      OPENAI_MOCK_PORT: "1080"
+    ports:
+      - "1080:1080"
     volumes:
-      - ./preset-openai-responses.json:/data/preset-openai-responses.json
+      - ./:/app
 
   logspout:
     # Logs: uses the docker daemon to collect logs from fastapi's stdout and push to cloudwatch
@@ -95,3 +95,16 @@ services:
       - "2000:2000/udp"
     env_file:
       - .env
+  
+  # old-openai-mock:
+  #   image: mockserver/mockserver:latest
+  #   ports:
+  #       - "1080:1080"
+  #   logging:
+  #     driver: none
+  #   environment:
+  #     MOCKSERVER_INITIALIZATION_JSON_PATH: /data/preset-openai-responses.json
+  #     # ↓ hot reload when the spec.json changes 😍
+  #     MOCKSERVER_WATCH_INITIALIZATION_JSON: "true"
+  #   volumes:
+  #     - ./preset-openai-responses.json:/data/preset-openai-responses.json
