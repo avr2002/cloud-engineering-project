@@ -5,6 +5,7 @@ from typing import Union
 
 import pydantic
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.routing import APIRoute
 
 from files_api.errors import (
@@ -55,9 +56,12 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
     )
     app.state.settings = settings
     app.include_router(ROUTER)
+    
     app.add_exception_handler(
-        exc_class_or_status_code=pydantic.ValidationError,
-        handler=handle_pydantic_validation_error,
+        exc_class_or_status_code=RequestValidationError, handler=handle_pydantic_validation_error
+    )
+    app.add_exception_handler(
+        exc_class_or_status_code=pydantic.ValidationError, handler=handle_pydantic_validation_error
     )
     # these middlewares get executed in reverse order that they are added to the app
     app.middleware("http")(handle_broad_exceptions__middleware)  # last middleware
