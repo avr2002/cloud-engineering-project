@@ -72,7 +72,7 @@ services:
     # command: "cloudwatch://${AWS_REGION}?DEBUG=1&NOEC2"  # use this line for verbose debug logs
     environment:
       EXCLUDE_LABELS: "logspout=disable"
-      LOGSPOUT_GROUP: local-fastapi-group
+      LOGSPOUT_GROUP: /aws/lambda/local-fastapi
       LOGSPOUT_STREAM: "{{.Name}}"
     volumes:
       - /var/run/docker.sock:/tmp/docker.sock
