@@ -87,10 +87,10 @@ function deploy-lambda:cd {
 
 	# bundle dependencies and handler in a zip file
 	cd "$LAMBDA_LAYER_DIR"
-	zip -r "$LAMBDA_LAYER_ZIP_FPATH" ./
+	zip -r "$LAMBDA_LAYER_ZIP_FPATH" ./ --exclude "*.pyc" --exclude "__pycache__/*"
 
 	cd "$SRC_DIR"
-	zip -r "$LAMBDA_HANDLER_ZIP_FPATH" ./
+	zip -r "$LAMBDA_HANDLER_ZIP_FPATH" ./ --exclude "*.pyc" --exclude "__pycache__/*"
 
 	cd "$THIS_DIR"
 
