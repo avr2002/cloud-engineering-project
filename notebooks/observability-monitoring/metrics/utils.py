@@ -24,52 +24,6 @@ except ImportError:
     pass
 
 
-def plot_line_graph(metrics_data_agg: pd.DataFrame) -> None:
-    """
-    Plot a line graph for the aggregated metrics data.
-
-    Args:
-        metrics_data_agg (pd.DataFrame): Aggregated metrics DataFrame with Timestamp, Label, and metrics columns.
-    """
-    # Pivot the data to prepare for plotting
-    pivot_df = metrics_data_agg.pivot(index="Timestamp", columns="Label", values="P95")
-
-    # Plot the data
-    plt.figure(figsize=(15, 6))
-    pivot_df.plot(ax=plt.gca(), marker="o", linestyle="-")
-
-    plt.title("P95 ResponseLatency by Label Over Time", fontsize=16)
-    plt.xlabel("Time", fontsize=12)
-    plt.ylabel("95$^{th}$ Percentile Response Time (ms)", fontsize=12)
-    plt.legend(title="Label")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-
-def plot_stacked_area_graph(metrics_data_agg: pd.DataFrame) -> None:
-    """
-    Plot a stacked area graph for the aggregated metrics data.
-
-    Args:
-        metrics_data_agg (pd.DataFrame): Aggregated metrics DataFrame with Timestamp, Label, and metrics columns.
-    """
-    # Pivot the data to prepare for plotting
-    pivot_df = metrics_data_agg.pivot(index="Timestamp", columns="Label", values="P95")
-
-    # Plot the data
-    plt.figure(figsize=(15, 6))
-    pivot_df.plot(kind="area", ax=plt.gca(), alpha=0.7)
-
-    plt.title("P95 Response Time by Label Over Time", fontsize=16)
-    plt.xlabel("Time", fontsize=12)
-    plt.ylabel("95$^{th}$ Percentile Response Time (ms)", fontsize=12)
-    plt.legend(title="Label")
-    plt.grid(True)
-    plt.tight_layout()
-    plt.show()
-
-
 def generate_random_metrics_df(
     namespace: str, metric_name: str, unit: str, num_points: int, hours: int, publish: bool = True
 ) -> pd.DataFrame:
@@ -220,3 +174,50 @@ def list_metrics(namespace: str, cw_client: Optional["CloudWatchClient"] = None)
     cw_client = cw_client or boto3.client("cloudwatch")
     metrics: "ListMetricsOutputTypeDef" = cw_client.list_metrics(Namespace=namespace)  # ["Metrics"]
     return metrics
+
+
+def plot_line_graph(metrics_data_agg: pd.DataFrame) -> None:
+    """
+    Plot a line graph for the aggregated metrics data.
+
+    Args:
+        metrics_data_agg (pd.DataFrame): Aggregated metrics DataFrame with Timestamp, Label, and metrics columns.
+    """
+    # Pivot the data to prepare for plotting
+    pivot_df = metrics_data_agg.pivot(index="Timestamp", columns="Label", values="P95")
+
+    # Plot the data
+    plt.figure(figsize=(15, 6))
+    pivot_df.plot(ax=plt.gca(), marker="o", linestyle="-")
+
+    plt.title("P95 ResponseLatency by Label Over Time", fontsize=16)
+    plt.xlabel("Time", fontsize=12)
+    plt.ylabel("95$^{th}$ Percentile Response Time (ms)", fontsize=12)
+    plt.legend(title="Label")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
+
+def plot_stacked_area_graph(metrics_data_agg: pd.DataFrame) -> None:
+    """
+    Plot a stacked area graph for the aggregated metrics data.
+
+    Args:
+        metrics_data_agg (pd.DataFrame): Aggregated metrics DataFrame with Timestamp, Label, and metrics columns.
+    """
+    # Pivot the data to prepare for plotting
+    pivot_df = metrics_data_agg.pivot(index="Timestamp", columns="Label", values="P95")
+
+    # Plot the data
+    plt.figure(figsize=(15, 6))
+    pivot_df.plot(kind="area", ax=plt.gca(), alpha=0.7)
+
+    plt.title("P95 Response Time by Label Over Time", fontsize=16)
+    plt.xlabel("Time", fontsize=12)
+    plt.ylabel("95$^{th}$ Percentile Response Time (ms)", fontsize=12)
+    plt.legend(title="Label")
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
