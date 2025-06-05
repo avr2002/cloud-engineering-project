@@ -50,7 +50,9 @@ async def start_xray_tracing__middleware(request: Request, call_next):
 
 
 @contextmanager
-def get_current_segment_or_create_if_not_exists(segment_name: str) -> Generator[Segment, Any, None]:
+def get_current_segment_or_create_if_not_exists(
+    segment_name: str,
+) -> Generator[Segment, Any, None]:
     """Check if a segment is already active, and if so, yield it. Otherwise, create a new segment."""
     current_segment: Segment | FacadeSegment | None = xray_recorder.current_segment()
     if current_segment:
@@ -67,7 +69,9 @@ def is_running_in_lambda() -> bool:
 
 
 @contextmanager
-def inject_trace_context_into_logger(segment: Segment | FacadeSegment) -> Generator[None, Any, None]:
+def inject_trace_context_into_logger(
+    segment: Segment | FacadeSegment,
+) -> Generator[None, Any, None]:
     """Add trace context to logs."""
     trace_ctx = {
         # You can name the keys whatever you want, until the trace IDs values present in the logs, X-Ray will automatically pick them up.
@@ -120,3 +124,12 @@ def capture_traceback_in_xray_trace(exc: Exception) -> None:
     # If we're in AWS Lambda, then log the exception to the current subsegment `Handle Request`.
     current_subsegment: Subsegment = xray_recorder.current_subsegment()
     current_subsegment.add_exception(exc, stack=get_stacktrace())
+
+
+def get_trace_context(segment: Segment | None = None) -> dict[str, str]:
+    current_segment: Segment = segment or xray_recorder.current_segment()
+    return {
+        "xray-trace-id": current_segment.trace_id,
+        "xray-segment-id": current_segment.id,
+        "xray-parent-id": current_segment.parent_id,
+    }

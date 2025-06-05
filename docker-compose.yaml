@@ -22,17 +22,18 @@ services:
       AWS_ACCESS_KEY_ID: mock-key-id
       AWS_SECRET_ACCESS_KEY: mock-key
       AWS_REGION: ap-south-1
-      # metrics
-      AWS_EMF_ENVIRONMENT: local # causes metrics to go to stdout
-      AWS_EMF_ENABLE_DEBUG_LOGGING: "true"
-      AWS_EMF_NAMESPACE: local-fastapi-service
-      AWS_EMF_DISABLE_METRIC_EXTRACTION: "false" # prevents logging metrics to stdout when true
       # traces - xray sdk (https://github.com/aws/aws-xray-sdk-python)
       # https://docs.aws.amazon.com/xray/latest/devguide/xray-sdk-python-configuration.html#xray-sdk-python-configuration-envvars
       AWS_XRAY_TRACING_NAME: "Files API"
       AWS_XRAY_DAEMON_ADDRESS: xray-daemon:2000
       AWS_XRAY_DAEMON_CONTEXT_MISSING: RUNTIME_ERROR # raise an exception if xray context is missing
-      AWS_XRAY_SDK_ENABLED: "true" # can disable sending traces to xray daemon
+      AWS_XRAY_SDK_ENABLED: "true" # if false, can disable sending traces to xray daemon
+      # metrics
+      # https://github.com/awslabs/aws-embedded-metrics-python
+      AWS_EMF_ENVIRONMENT: local # causes metrics to go to stdout
+      AWS_EMF_NAMESPACE: local-files-api
+      # prevents logging metrics to cloudwatch by omitting EMF metadata from logs.
+      AWS_EMF_DISABLE_METRIC_EXTRACTION: false
     depends_on:
       - aws-mock
       - openai-mock

@@ -8,6 +8,7 @@ set -e
 
 AWS_PROFILE="cloud-course"
 AWS_REGION="ap-south-1"
+AWS_DEFAULT_REGION="$AWS_REGION"
 
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 MINIMUM_TEST_COVERAGE_PERCENT=0
@@ -39,6 +40,7 @@ function install {
 function set-local-aws-env-vars {
     export AWS_PROFILE
     export AWS_REGION
+	export AWS_DEFAULT_REGION
 }
 
 function deploy-lambda {
@@ -81,9 +83,9 @@ function deploy-lambda:cd {
 		&& pip install \
 			--editable /out/[aws-lambda] \
 			--target /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python \
-		&& rm -rf /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python/boto3 \
-		&& rm -rf /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python/botocore \
 		"
+	# && rm -rf /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python/boto3 \
+	# && rm -rf /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python/botocore \
 
 	# bundle dependencies and handler in a zip file
 	cd "$LAMBDA_LAYER_DIR"
@@ -152,6 +154,8 @@ function deploy-lambda:code {
 
 
 function update-dashboard {
+	set-local-aws-env-vars
+
 	VERSION_TXT_PATH=$THIS_DIR/version.txt
 	DASHBOARD_NAME="FilesAPIDashboard"
 

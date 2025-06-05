@@ -20,6 +20,11 @@ from files_api.settings import Settings
 
 
 def custom_generate_unique_id(route: APIRoute):
+    """
+    Generate prettier `operationId`s in the OpenAPI schema.
+
+    These become the function names in generated client SDKs.
+    """
     return f"{route.tags[0]}-{route.name}"
 
 
@@ -46,7 +51,7 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
         contact={
             "name": "Amit Vikram Raj",
             "url": "https://www.linkedin.com/in/avr27/",
-            "email": "avr13405@gmail.com",
+            "email": "raj.amitvikram@gmail.com",
         },
         license_info={"name": "Apache 2.0", "identifier": "MIT"},
         docs_url="/",  # its easier to find the docs when they live on the base url
@@ -56,18 +61,24 @@ def create_app(settings: Union[Settings, None] = None) -> FastAPI:
     )
     app.state.settings = settings
     app.include_router(ROUTER)
-    
+
     app.add_exception_handler(
-        exc_class_or_status_code=RequestValidationError, handler=handle_pydantic_validation_error
+        exc_class_or_status_code=RequestValidationError,
+        handler=handle_pydantic_validation_error,
     )
     app.add_exception_handler(
-        exc_class_or_status_code=pydantic.ValidationError, handler=handle_pydantic_validation_error
+        exc_class_or_status_code=pydantic.ValidationError,
+        handler=handle_pydantic_validation_error,
     )
-    # these middlewares get executed in reverse order that they are added to the app
-    app.middleware("http")(handle_broad_exceptions__middleware)  # last middleware
+    # these middlewares get executed in reverse order that they are added(registered) to the app
+    app.middleware("http")(
+        handle_broad_exceptions__middleware
+    )  # last middleware to be executed before the request is processed; first to execute after the request is processed
     app.middleware("http")(inject_lambda_context__middleware)
-    app.middleware("http")(start_xray_tracing__middleware)
-    app.middleware("http")(start_metrics_context__middleware)  # first middleware
+    app.middleware("http")(start_metrics_context__middleware)
+    app.middleware("http")(
+        start_xray_tracing__middleware
+    )  # first middleware to get executed before the request is processed; last to execute after the request is processed
     return app
 
 

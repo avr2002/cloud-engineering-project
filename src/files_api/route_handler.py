@@ -21,7 +21,8 @@ cold_start = True
 def log_lambda_cold_start():
     """Log the cold start of the Lambda function."""
     global cold_start
-    logger.info(f"Cold Start: {cold_start}", **{"cold_start": cold_start})
+    message = "Cold Start" if cold_start else "Warm Start"
+    logger.info(message, **{"cold_start": cold_start})
     cold_start = False
 
 
@@ -40,18 +41,18 @@ class RouteHandler(APIRoute):
             }
             logger.configure(extra={"http": request_context})
 
-            # Add metrics context to logs
-            metrics: MetricsLogger = metrics_ctx.get()
+            # Add context to metrics logger
+            metrics: MetricsLogger | None = metrics_ctx.get()
+            if metrics:
+                metrics.put_dimensions({k: v for k, v in request_context.items() if k != "path"})
 
-            # @TODO: Trying to see difference b/w adding dimensions and properties; Remove any one of them later
-            # READ MORE about dimensions and properties in AWS Embedded Metrics: https://github.com/awslabs/aws-embedded-metrics-python
-            metrics.put_dimensions(request_context)
-            # metrics.set_property(key="fastapi", value=context)
-
-            # with logger.contextualize(http=request_context):
+            # Log Lambda cold start(if any) and request info
             log_lambda_cold_start()
             log_request_info(request)
+
             response: Response = await original_route_handler(request)
+
+            # Log response info
             log_response_info(response)
             return response
 

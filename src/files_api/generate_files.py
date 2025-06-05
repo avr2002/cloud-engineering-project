@@ -33,7 +33,7 @@ async def get_text_chat_completion(prompt: str, openai_client: Optional[AsyncOpe
         n=1,  # number of responses
     )
 
-    metrics: MetricsLogger = metrics_ctx.get()
+    metrics: MetricsLogger | None = metrics_ctx.get()
     if metrics:
         metrics.put_metric(
             key="OpenAITokensUsage",
@@ -58,7 +58,7 @@ async def generate_image(prompt: str, openai_client: Optional[AsyncOpenAI] = Non
         n=1,
     )
 
-    metrics: MetricsLogger = metrics_ctx.get()
+    metrics: MetricsLogger | None = metrics_ctx.get()
     if metrics:
         metrics.put_metric(key="OpenAIImageGeneratedCount", value=1, unit="Count")
 
@@ -90,7 +90,7 @@ async def generate_text_to_speech(
     file_content_bytes: bytes = audio_response.content
     file_mime_type: str = audio_response.headers.get("Content-Type")
 
-    metrics: MetricsLogger = metrics_ctx.get()
+    metrics: MetricsLogger | None = metrics_ctx.get()
     if metrics:
         metrics.put_metric(key="OpenAITextToSpeechGeneratedCount", value=1, unit="Count")
 
