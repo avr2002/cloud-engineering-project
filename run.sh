@@ -228,14 +228,22 @@ function run-mock {
 	python -m moto.server -p $MOTO_PORT &
 	MOTO_PID=$!
 
+	# Wait for moto server to be ready
+	echo "Waiting for moto server to start..."
+	sleep 2
+
 	# point the AWS CLI and boto3 to the mocked AWS server using mocked credentials
-	export AWS_ENDPOINT_URL="http://localhost:$MOTO_PORT"
+	# AWS CLI v2 requires service-specific endpoint URLs
+	export AWS_ENDPOINT_URL="http://127.0.0.1:$MOTO_PORT"
 	export AWS_SECRET_ACCESS_KEY="mock"
 	export AWS_ACCESS_KEY_ID="mock"
 	export S3_BUCKET_NAME="some-bucket"
+	export AWS_REGION="us-east-1"
+	export AWS_DEFAULT_REGION="us-east-1"
+	# export AWS_ENDPOINT_URL_S3="http://s3.$AWS_REGION.127.0.0.1:$MOTO_PORT"
 
 	# create a bucket called "some-bucket" using the mocked aws server
-	aws s3 mb "s3://$S3_BUCKET_NAME"
+	aws s3 mb "s3://$S3_BUCKET_NAME" --endpoint-url="http://127.0.0.1:$MOTO_PORT" || (trap "kill $MOTO_PID" EXIT && exit 1)
 
 	#######################################
     # --- Mock OpenAI with mockserver --- #
