@@ -8,7 +8,10 @@ from typing import (
 )
 
 import boto3
+from aws_embedded_metrics.logger.metrics_logger import MetricsLogger
 from botocore.exceptions import ClientError
+
+from files_api.monitoring.metrics import metrics_ctx
 
 try:
     from mypy_boto3_s3 import S3Client
@@ -66,6 +69,11 @@ def fetch_s3_object(
     """
     s3_client = s3_client or boto3.client("s3")
     response: "GetObjectOutputTypeDef" = s3_client.get_object(Bucket=bucket_name, Key=object_key)
+
+    metrics: MetricsLogger | None = metrics_ctx.get()
+    if metrics:
+        metrics.put_metric(key="S3BytesDownloaded", value=response["ContentLength"], unit="Bytes")
+
     return response
 
 

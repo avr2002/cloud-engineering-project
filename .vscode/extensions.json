@@ -24,7 +24,8 @@
         "PKief.material-icon-theme",
         // tools: git, docker
         "eamodio.gitlens",
-        "ms-azuretools.vscode-docker",
+        // "ms-azuretools.vscode-docker",   // deprecated, use the extension pack below instead
+        "ms-azuretools.vscode-containers",
         // GitHub
         "github.vscode-github-actions",
         "GitHub.copilot",
@@ -35,5 +36,6 @@
         "christian-kohler.path-intellisense",
         // jump to definition of pytest fixtures, e.g. with Ctrl+Click / Cmd+Click
         "nickmillerdev.pytest-fixtures",
+        "teticio.python-envy", // autocompletion for python virtual environments
     ]
 }

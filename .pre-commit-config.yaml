@@ -63,7 +63,7 @@ repos:
         verbose: false
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v5.0.0
     hooks:
       # Fails if there are any ">>>>>" lines in files due to merge conflicts.
       - id: check-merge-conflict
@@ -109,7 +109,7 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.10.0"
+    rev: "v1.16.0"
     hooks:
       - id: mypy
         args:
@@ -120,21 +120,21 @@ repos:
           ]
 
   - repo: https://github.com/psf/black
-    rev: 24.4.2
+    rev: 25.1.0
     hooks:
       - id: black
         args:
           - --config=./pyproject.toml
 
   - repo: https://github.com/PyCQA/pylint
-    rev: v3.2.2
+    rev: v3.3.7
     hooks:
       - id: pylint
         args:
           - --rcfile=./pyproject.toml
 
   - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
+    rev: 7.2.0
     hooks:
       - id: flake8
         args:
@@ -145,7 +145,7 @@ repos:
           - Flake8-pyproject
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+    rev: 6.0.1
     hooks:
       - id: isort
         args:

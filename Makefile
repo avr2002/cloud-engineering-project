@@ -7,8 +7,14 @@
 build:
 	bash run.sh build
 
+update-dashboard:
+	bash run.sh update-dashboard
+
 deploy-lambda: clean
 	bash run.sh deploy-lambda
+
+deploy-lambda-code: clean
+	bash run.sh deploy-lambda:code
 
 install-generated-sdk:
 	bash run.sh install-generated-sdk
@@ -18,6 +24,12 @@ generate-client-library:
 
 run:
 	bash run.sh run
+
+run-docker:
+	bash run.sh run-docker
+
+run-locust:
+	bash run.sh run-locust
 
 run-mock:
 	bash run.sh run-mock

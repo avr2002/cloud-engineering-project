@@ -6,6 +6,10 @@ set -e
 # --- Constants --- #
 #####################
 
+AWS_PROFILE="cloud-course"
+AWS_REGION="ap-south-1"
+AWS_DEFAULT_REGION="$AWS_REGION"
+
 THIS_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 MINIMUM_TEST_COVERAGE_PERCENT=0
 
@@ -32,9 +36,15 @@ function install {
 # Note, this function assumes that
 # - a lambda function named $AWS_LAMBDA_FUNCTION_NAME already exists
 # - docker 🐳 is required to run this function
+
+function set-local-aws-env-vars {
+    export AWS_PROFILE
+    export AWS_REGION
+	export AWS_DEFAULT_REGION
+}
+
 function deploy-lambda {
-	export AWS_PROFILE=cloud-course
-	export AWS_REGION=ap-south-1
+	set-local-aws-env-vars
 	deploy-lambda:cd
 }
 
@@ -73,16 +83,16 @@ function deploy-lambda:cd {
 		&& pip install \
 			--editable /out/[aws-lambda] \
 			--target /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python \
-		&& rm -rf /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python/boto3 \
-		&& rm -rf /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python/botocore \
 		"
+	# && rm -rf /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python/boto3 \
+	# && rm -rf /out/${BUILD_DIR_REL_PATH}/${LAMBDA_LAYER_DIR_NAME}/python/botocore \
 
 	# bundle dependencies and handler in a zip file
 	cd "$LAMBDA_LAYER_DIR"
-	zip -r "$LAMBDA_LAYER_ZIP_FPATH" ./
+	zip -r "$LAMBDA_LAYER_ZIP_FPATH" ./ --exclude "*.pyc" --exclude "__pycache__/*"
 
 	cd "$SRC_DIR"
-	zip -r "$LAMBDA_HANDLER_ZIP_FPATH" ./
+	zip -r "$LAMBDA_HANDLER_ZIP_FPATH" ./ --exclude "*.pyc" --exclude "__pycache__/*"
 
 	cd "$THIS_DIR"
 
@@ -107,7 +117,184 @@ function deploy-lambda:cd {
 		--layers $LAYER_VERSION_ARN \
 		--handler "files_api.aws_lambda_handler.handler" \
 		--output json | cat
+
+	# update FilesAPIDashboard with the new version annotation
+	update-dashboard
 }
+
+
+function deploy-lambda:code {
+	# Function to deploy the application code to the lambda function
+	set-local-aws-env-vars
+
+	LAMBDA_HANDLER_ZIP_FPATH="${BUILD_DIR}/lambda.zip"
+	SRC_DIR="${THIS_DIR}/src"
+
+	# create the build directory if it doesn't exist
+	[ ! -d "$BUILD_DIR" ] && mkdir -p "$BUILD_DIR"
+
+	# clean up artifacts
+	rm -f "$LAMBDA_HANDLER_ZIP_FPATH" || true
+
+	# bundle handler code in a zip file
+	cd "$SRC_DIR"
+	zip -r "$LAMBDA_HANDLER_ZIP_FPATH" ./
+
+	cd "$THIS_DIR"
+
+	# publish the lambda "deployment package" (the handler)
+	aws lambda update-function-code \
+		--function-name "$AWS_LAMBDA_FUNCTION_NAME" \
+		--zip-file fileb://${LAMBDA_HANDLER_ZIP_FPATH} \
+		--output json | cat
+
+	# update FilesAPIDashboard with the new version annotation
+	update-dashboard
+}
+
+
+function update-dashboard {
+	set-local-aws-env-vars
+
+	VERSION_TXT_PATH=$THIS_DIR/version.txt
+	DASHBOARD_NAME="FilesAPIDashboard"
+
+	# Function to update the CloudWatch dashboard
+	python3 "$THIS_DIR/scripts/update_dashboard.py" \
+		--dashboard-name "$DASHBOARD_NAME" \
+		--version-txt-path "$VERSION_TXT_PATH"
+
+	echo "Dashboard updated successfully with version $(cat $VERSION_TXT_PATH)"
+}
+
+# start the FastAPI app locally with real AWS credentials
+function run {
+	AWS_PROFILE=$AWS_PROFILE\
+	S3_BUCKET_NAME=python-aws-cloud-course-bucket\
+	uvicorn 'files_api.main:create_app' --factory --host 0.0.0.0 --port 8000 --reload
+}
+
+
+# start the FastAPI app in a Docker container
+function run-docker {
+    aws configure export-credentials --profile $AWS_PROFILE --format env > .env
+    set-local-aws-env-vars
+    docker compose up --remove-orphans --build
+}
+
+# Run with Locust
+function run-locust {
+    set-local-aws-env-vars
+    aws configure export-credentials --profile $AWS_PROFILE --format env > .env
+    docker compose \
+        --file docker-compose.yaml \
+        --file docker-compose.locust.yaml \
+        up \
+        --build
+}
+
+
+# start the FastAPI app locally with actual AWS & OpenAI credentials
+function run-local {
+	if [ ! -f "$THIS_DIR/.openai-env" ]; then
+        echo "No OpenAI environment file found. Please create a .openai-env file with the OpenAI API key."
+        return 1
+    fi
+
+	AWS_PROFILE=$AWS_PROFILE\
+	S3_BUCKET_NAME=python-aws-cloud-course-bucket\
+	uv run -- uvicorn 'files_api.main:create_app' --factory --host 0.0.0.0 --port 8000 --reload
+
+	# Unset the environment variables
+	unset OPENAI_API_KEY
+}
+
+# start the FastAPI app, pointed at a mocked aws endpoint
+function run-mock {
+	set -e
+
+	# Check if Docker is running
+	if ! docker info >/dev/null 2>&1; then
+		echo "Docker is not running. Please start Docker Desktop and try again."
+		exit 1
+	fi
+
+	#####################################
+    # --- Mock AWS with Moto server --- #
+    #####################################
+
+	# Start moto.server in the background on localhost:5000
+	MOTO_PORT=5000
+	python -m moto.server -p $MOTO_PORT &
+	MOTO_PID=$!
+
+	# Wait for moto server to be ready
+	echo "Waiting for moto server to start..."
+	sleep 2
+
+	# point the AWS CLI and boto3 to the mocked AWS server using mocked credentials
+	# AWS CLI v2 requires service-specific endpoint URLs
+	export AWS_ENDPOINT_URL="http://127.0.0.1:$MOTO_PORT"
+	export AWS_SECRET_ACCESS_KEY="mock"
+	export AWS_ACCESS_KEY_ID="mock"
+	export S3_BUCKET_NAME="some-bucket"
+	export AWS_REGION="us-east-1"
+	export AWS_DEFAULT_REGION="us-east-1"
+	# export AWS_ENDPOINT_URL_S3="http://s3.$AWS_REGION.127.0.0.1:$MOTO_PORT"
+
+	# create a bucket called "some-bucket" using the mocked aws server
+	aws s3 mb "s3://$S3_BUCKET_NAME" --endpoint-url="http://127.0.0.1:$MOTO_PORT" || (trap "kill $MOTO_PID" EXIT && exit 1)
+
+	#######################################
+    # --- Mock OpenAI with mockserver --- #
+    #######################################
+
+	# point the OpenAI API to the mocked OpenAI server using mocked credentials
+	export OPENAI_MOCK_PORT=1080
+	export OPENAI_BASE_URL="http://localhost:$OPENAI_MOCK_PORT"
+	export OPENAI_API_KEY="mocked_key"
+
+    python "$THIS_DIR/tests/mocks/openai_fastapi_mock_app.py" &
+    OPENAI_MOCK_PID=$!
+
+	###########################################################
+    # --- Schedule the mocks to shut down on FastAPI Exit --- #
+    ###########################################################
+
+    # Trap EXIT signal to kill the moto.server and mocked open-ai server process when uvicorn stops
+    trap "kill $MOTO_PID; kill $OPENAI_MOCK_PID" EXIT
+
+    # ----- #
+	# OLD OpenAI Mocking
+
+	# # Start the Docker Compose to mock the OpenAI API
+	# docker compose --file ./mock-openai-docker-compose.yaml up --detach
+
+	# # Trap EXIT signal to kill the moto.server process when uvicorn stops
+	# trap "kill $MOTO_PID; docker compose --file ./mock-openai-docker-compose.yaml down" EXIT
+
+	# ----- #
+
+	# Export Log Level
+	export LOGURU_LEVEL="DEBUG"
+
+	# Disable AWS X-Ray
+	export AWS_XRAY_SDK_ENABLED="false"
+
+	# Export AWS EMF Environment Variables
+	export AWS_EMF_DISABLE_METRIC_EXTRACTION="true"	# Disable EMF
+	export AWS_EMF_ENVIRONMENT=local # causes metrics to go to stdout
+    export AWS_EMF_ENABLE_DEBUG_LOGGING="true"
+    export AWS_EMF_NAMESPACE=local-fastapi-service
+
+	# Start FastAPI app with uvicorn in the foreground
+	uvicorn src.files_api.main:create_app --factory --host 0.0.0.0 --port 8000 --reload
+
+	# Wait for the moto.server process to finish (this is optional if you want to keep it running)
+	wait $MOTO_PID
+	wait $OPENAI_MOCK_PID
+}
+
 
 function install-generated-sdk {
 	# install the generated SDK in newly created venv
@@ -132,66 +319,6 @@ function generate-client-library {
 	--package-name files_api_sdk
 }
 
-
-function run {
-	AWS_PROFILE=cloud-course\
-	S3_BUCKET_NAME=python-aws-cloud-course-bucket\
-	uvicorn 'files_api.main:create_app' --reload
-}
-
-
-function run-local {
-	if [ -f .env ]; then
-		export $(grep -v '^#' .env | xargs)
-		# Capture the environment variables names
-		VARS=$(grep -v '^#' .env | cut -d= -f1)
-	fi
-
-	uvicorn 'files_api.main:create_app' --reload
-
-	# Unset the environment variables
-	for var in $VARS; do
-		unset $var
-	done
-}
-
-# start the FastAPI app, pointed at a mocked aws endpoint
-function run-mock {
-	set +e
-
-	# Start moto.server in the background on localhost:5000
-	python -m moto.server -p 5000 &
-	MOTO_PID=$!
-
-	# point the AWS CLI and boto3 to the mocked AWS server using mocked credentials
-	export AWS_ENDPOINT_URL="http://localhost:5000"
-	export AWS_SECRET_ACCESS_KEY="mock"
-	export AWS_ACCESS_KEY_ID="mock"
-	export S3_BUCKET_NAME="some-bucket"
-
-	# point the OpenAI API to the mocked OpenAI server using mocked credentials
-	export OPENAI_BASE_URL="http://localhost:1080"
-	export OPENAI_API_KEY="mocked_key"
-
-	# create a bucket called "some-bucket" using the mocked aws server
-	aws s3 mb "s3://$S3_BUCKET_NAME"
-
-	# Start the Docker Compose to mock the OpenAI API
-	docker compose --file ./mock-openai-docker-compose.yaml up --detach
-
-	# Trap EXIT signal to kill the moto.server process when uvicorn stops
-	trap 'kill $MOTO_PID; docker compose --file ./mock-openai-docker-compose.yaml down' EXIT
-
-	# Set AWS endpoint URL and start FastAPI app with uvicorn in the foreground
-	uvicorn src.files_api.main:create_app --reload
-
-	# # Unset the environment variables
-	unset OPENAI_BASE_URL
-	unset OPENAI_API_KEY
-
-	# Wait for the moto.server process to finish (this is optional if you want to keep it running)
-	wait $MOTO_PID
-}
 
 # run linting, formatting, and other static code quality tools
 function lint {
@@ -220,6 +347,10 @@ function test:ci {
 # (example) ./run.sh test tests/test_states_info.py::test__slow_add
 function run-tests {
 	PYTEST_EXIT_STATUS=0
+
+	# Disable AWS X-Ray and AWS EMF
+	export AWS_XRAY_SDK_ENABLED="false"
+	export AWS_EMF_DISABLE_METRIC_EXTRACTION="true"	# Disable EMF
 
 	# clean the test-reports dir
 	rm -rf "$THIS_DIR/test-reports" || mkdir "$THIS_DIR/test-reports"

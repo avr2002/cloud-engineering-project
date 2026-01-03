@@ -1,0 +1,17 @@
+{
+  "agent": {
+    "metrics_collection_interval": 10,
+    "logfile": "/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log"
+  },
+  "metrics": {
+    "namespace": "MyNamespace",
+    "append_dimensions": {
+      "InstanceId": "i-12345678"
+    },
+    "metrics_collected": {
+      "statsd": {
+        "service_address": ":8125"
+      }
+    }
+  }
+}

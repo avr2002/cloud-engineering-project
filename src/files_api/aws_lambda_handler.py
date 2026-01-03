@@ -10,4 +10,7 @@ from files_api.main import create_app
 
 APP = create_app()
 
-handler = Mangum(APP)
+
+def handler(event, context):
+    response = Mangum(APP)(event, context)
+    return response

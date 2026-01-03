@@ -16,6 +16,7 @@ from pydantic import (
     BaseModel,
     ConfigDict,
     Field,
+    field_validator,
     model_validator,
 )
 from typing_extensions import Self
@@ -187,9 +188,18 @@ class GeneratedFileType(str, Enum):
     IMAGE = "Image"
     AUDIO = "Text-to-Speech"
 
+    @classmethod
+    def from_string(cls, value: str) -> "GeneratedFileType":
+        """Convert a string to a case-insensitive `GeneratedFileType`."""
+        value_lower = value.lower()
+        for item in cls:
+            if item.value.lower() == value_lower:
+                return item
+        raise ValueError(f"Invalid file type: {value}; Expected one of: {', '.join(item.value for item in cls)}")
 
-class GenerateFilesQueryParams(BaseModel):
-    """Query parameters for `POST /v1/files/generated`."""
+
+class GenerateFilesBody(BaseModel):
+    """Request Body for `POST /v1/files/generated`."""
 
     file_path: str = Path(
         ...,
@@ -204,14 +214,22 @@ class GenerateFilesQueryParams(BaseModel):
     )
     file_type: GeneratedFileType = Field(
         ...,
-        description="The type of file to generate.",
+        description="The type of file to generate.(case in-sensitive)",
         json_schema_extra={"example": "Text"},
     )
+
+    # https://docs.pydantic.dev/latest/concepts/validators/#field-validators
+    @field_validator("file_type", mode="before")
+    @classmethod
+    def normalize_file_type(cls, value: str) -> str:
+        """Normalize file_type to make it case-insensitive."""
+        value = GeneratedFileType.from_string(value)
+        return value
 
     @model_validator(mode="after")
     def validate_file_path(self) -> Self:
         """Ensure that the file path matches the file type."""
-        file_type = self.file_type.value
+        file_type = self.file_type
 
         if file_type == GeneratedFileType.TEXT and not re.match(r".*\.txt$", self.file_path):
             raise ValueError("For text files, the path must end with .txt")
@@ -223,6 +241,14 @@ class GenerateFilesQueryParams(BaseModel):
             raise ValueError("For audio files, the path must end with .mp3, .opus, .aac, .flac, .wav, or .pcm")
 
         return self
+
+    @field_validator("prompt", mode="after")
+    @classmethod
+    def validate_prompt(cls, value: str) -> str:
+        """Ensure that the prompt is not empty."""
+        if not value.strip():
+            raise ValueError("Prompt cannot be empty.")
+        return value
 
 
 # create/update (Crud)
