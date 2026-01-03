@@ -27,4 +27,4 @@ async def start_metrics_context__middleware(request: Request, call_next):
         response: Response = await call_next(request)
         return response
 
-    return await _start_metrics_context()
+    return await _start_metrics_context(metrics=None)

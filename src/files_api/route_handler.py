@@ -1,3 +1,5 @@
+# pylint: disable=invalid-name, global-statement
+
 from typing import Callable
 
 from aws_embedded_metrics.logger.metrics_logger import MetricsLogger

@@ -154,4 +154,5 @@ disable = [
     "unsupported-binary-operation",
     "unsubscriptable-object",
     "missing-module-docstring",
+    "duplicate-code",
 ]

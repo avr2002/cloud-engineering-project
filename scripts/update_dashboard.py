@@ -18,7 +18,7 @@ except ImportError:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="update_dashboard", description="Update Files API Dashboard in Cloudwatch.")
     parser.add_argument("--dashboard-name", required=True, help="Name of the CloudWatch dashboard.")
-    parser.add_argument("--version-txt-path", required=True, help="Path to the version.txt file."),
+    parser.add_argument("--version-txt-path", required=True, help="Path to the version.txt file.")
     parser.add_argument(
         "--n-deployment-events",
         type=int,
@@ -111,13 +111,13 @@ def add_vertical_annotations_to_widgets(
     current_time = datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
     for widget in dashboard_body.get("widgets", []):
-        widget_properties: dict = widget.get("properties") or dict()
+        widget_properties: dict = widget.get("properties") or {}
         if widget_properties.get("view") == "timeSeries":
             # get annotations
-            annotations: dict[str, list[dict]] = widget_properties.get("annotations") or dict()
+            annotations: dict[str, list[dict]] = widget_properties.get("annotations") or {}
 
             # add vertical annotation
-            vertical_annotations = annotations.get("vertical") or list()
+            vertical_annotations = annotations.get("vertical") or []
 
             # only keep last n deployments annotations
             vertical_annotations = vertical_annotations[-n_deployment_events:]
@@ -140,11 +140,11 @@ def reset_dashboard_widgets(dashboard_body: dict) -> dict:
         :dict: The updated dashboard body
     """
     for widget in dashboard_body.get("widgets", []):
-        widget_properties: dict = widget.get("properties") or dict()
+        widget_properties: dict = widget.get("properties") or {}
         if widget_properties.get("view") == "timeSeries":
             # get annotations
-            annotations: dict[str, list[dict]] = widget_properties.get("annotations") or dict()
-            vertical_annotations = annotations.get("vertical") or list()
+            annotations: dict[str, list[dict]] = widget_properties.get("annotations") or {}
+            vertical_annotations = annotations.get("vertical") or []
             if vertical_annotations:
                 annotations["vertical"] = []  # remove vertical annotations
 
